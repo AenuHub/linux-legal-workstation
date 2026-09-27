@@ -21,3 +21,5 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Windows 10/11 one-command installation engine (`install.ps1`) supporting self-elevation, SCardSvr service management, Adoptium Eclipse Temurin 11 MSI, official TÜBİTAK AKİS Windows x64 MSI, UYAP UKI MSI, and dynamic Adalet E-İmza CDN installation.
 - Windows CLI diagnosis and upgrade tool (`bin/legal-workstation.ps1` and CMD wrapper `bin/legal-workstation.cmd`).
 - Automated container integration test for Windows PowerShell scripts (`tests/test-windows-powershell.sh`) using official Microsoft PowerShell container.
+- Non-destructive unified uninstall command (`legal-workstation uninstall`) for both Linux and Windows, removing suite-specific services, launchers, and isolation files while strictly protecting pre-existing user software and drivers.
+- Container-verified clean installation and uninstallation test on Ubuntu and Fedora.

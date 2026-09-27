@@ -8,8 +8,11 @@
 [CmdletBinding()]
 param (
     [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'upgrade', 'update', 'start', 'restart', 'help', '')]
-    [string]$Command = 'doctor'
+    [ValidateSet('doctor', 'upgrade', 'update', 'uninstall', 'remove', 'start', 'restart', 'help', '')]
+    [string]$Command = 'doctor',
+
+    [Parameter(Position = 1)]
+    [switch]$Force
 )
 
 $ErrorActionPreference = 'Continue'
@@ -240,6 +243,64 @@ function Invoke-Upgrade {
     Invoke-Doctor
 }
 
+function Invoke-Uninstall {
+    param([switch]$ForceUninstall)
+
+    if (-not $ForceUninstall) {
+        Write-Host "`nDİKKAT: Bu işlem Legal Workstation tarafından kurulan Adalet E-İmza servisini ve CLI araçlarını kaldıracaktır." -ForegroundColor Yellow
+        Write-Host "Sisteminizde önceden kurulu olan genel programlarınıza (kart okuyucu, sistem java vb.) dokunulmayacaktır.`n" -ForegroundColor Gray
+        $confirm = Read-Host "Kaldırma işlemine devam etmek istiyor musunuz? [e/H]"
+        if ($confirm -notmatch '^[eEyY]$') {
+            Write-Info "Kaldırma işlemi iptal edildi."
+            return
+        }
+    }
+
+    Write-Step "Legal Workstation (Windows) kaldırılıyor..."
+
+    # 1. Stop process
+    Write-Info "1/3: Çalışan süreçler sonlandırılıyor..."
+    Get-Process adalet-eimza-tray -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # 2. Uninstall Adalet E-İmza MSI installed by suite if present
+    Write-Info "2/3: Adalet E-İmza Uygulaması kaldırılıyor..."
+    $uninstallKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    )
+    foreach ($k in $uninstallKeys) {
+        if (Test-Path $k) {
+            Get-ChildItem $k -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    $dn = (Get-ItemProperty $_.PSPath).DisplayName
+                    if ($dn -like "*Adalet E-İmza*") {
+                        $guid = $_.PSChildName
+                        Write-Info "Adalet E-İmza kaldırılıyor ($guid)..."
+                        Start-Process msiexec.exe -ArgumentList "/x $guid /qn /norestart" -Wait
+                    }
+                } catch {}
+            }
+        }
+    }
+
+    # 3. Remove CLI tools & PATH
+    Write-Info "3/3: CLI araçları ve ortam değişkenleri temizleniyor..."
+    $installDir = "$env:ProgramData\legal-workstation"
+    if (Test-Path $installDir) {
+        Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    # Clean machine PATH
+    $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    if ($machinePath -like "*$installDir\bin*") {
+        $newPath = ($machinePath.Split(';') | Where-Object { $_ -ne "$installDir\bin" -and $_ -ne "" }) -join ';'
+        [Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
+    }
+
+    Write-Success "Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
+}
+
 function Show-Help {
     Write-Host @"
 Legal Workstation Windows CLI
@@ -251,14 +312,17 @@ Komutlar:
   doctor       Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
   upgrade      Adalet E-İmza ve UYAP bileşenlerini resmi CDN üzerinden günceller.
   update       'upgrade' komutunun kısayoludur.
+  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır.
   help         Bu yardım mesajını görüntüler.
 "@
 }
 
 switch ($Command) {
-    'doctor'  { Invoke-Doctor }
-    'upgrade' { Invoke-Upgrade }
-    'update'  { Invoke-Upgrade }
-    'help'    { Show-Help }
-    default   { Invoke-Doctor }
+    'doctor'    { Invoke-Doctor }
+    'upgrade'   { Invoke-Upgrade }
+    'update'    { Invoke-Upgrade }
+    'uninstall' { Invoke-Uninstall -ForceUninstall:$Force }
+    'remove'    { Invoke-Uninstall -ForceUninstall:$Force }
+    'help'      { Show-Help }
+    default     { Invoke-Doctor }
 }

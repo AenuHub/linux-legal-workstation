@@ -115,6 +115,21 @@ Bu komut sırasıyla:
 
 ---
 
+## 🗑️ Güvenli ve Temiz Kaldırma (`uninstall`)
+
+Kurulum paketinin kurduğu tüm servisleri, masaüstü kısayollarını ve başlatıcıları sistemden kaldırmak istediğinizde tek bir komut çalıştırmanız yeterlidir:
+
+```bash
+legal-workstation uninstall
+```
+
+*(Windows için de PowerShell veya CMD üzerinden aynı komut geçerlidir: `legal-workstation uninstall`)*
+
+> [!NOTE]
+> **Güvenlik ve İzolasyon İlkesi:** Bu kaldırma komutu **yalnızca** bu aracın kurduğu servisleri, başlatıcıları ve izole bileşenleri kaldırır. Bilgisayarınızda önceden veya manuel olarak kurulu olan genel sistem paketlerinize, sürücülerinize ya da dosyalarınıza kesinlikle dokunmaz.
+
+---
+
 ## 🗺️ Desteklenen Platformlar ve Yol Haritası
 
 - [x] **Arch Linux & Omarchy:** Tamamen test edildi, donanım düzeyinde doğrulandı ve üretimde çalışıyor.

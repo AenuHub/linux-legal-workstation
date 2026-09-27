@@ -140,6 +140,67 @@ cmd_upgrade() {
     cmd_doctor
 }
 
+cmd_uninstall() {
+    local force=false
+    if [[ "${2:-}" == "-y" || "${2:-}" == "--yes" ]]; then
+        force=true
+    fi
+
+    if [[ "$force" != true ]]; then
+        printf "${YELLOW}${BOLD}DİKKAT:${NC} Bu işlem Linux Legal Workstation tarafından kurulan servisleri, başlatıcıları ve dosyaları sisteminizden kaldıracaktır.\n"
+        printf "Daha önce sisteminizde manuel olarak kurulu olan genel sistem paketlerinize (kart okuyucu, sistem java vb.) dokunulmayacaktır.\n\n"
+        read -r -p "Kaldırma işlemine devam etmek istiyor musunuz? [e/H] " confirm
+        if [[ "$confirm" != "e" && "$confirm" != "E" && "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            log_info "Kaldırma işlemi iptal edildi."
+            exit 0
+        fi
+    fi
+
+    log_step "Linux Legal Workstation kaldırılıyor..."
+
+    # 1. Stop and disable Adalet E-İmza tray service
+    log_info "1/4: Arka plan servisleri durduruluyor ve temizleniyor..."
+    if has_cmd systemctl; then
+        systemctl --user stop adalet-eimza-tray.service 2>/dev/null || true
+        systemctl --user disable adalet-eimza-tray.service 2>/dev/null || true
+    fi
+    rm -f "$HOME/.config/systemd/user/adalet-eimza-tray.service"
+    if has_cmd systemctl; then
+        systemctl --user daemon-reload 2>/dev/null || true
+    fi
+
+    # 2. Remove desktop entries and launchers created by suite
+    log_info "2/4: Masaüstü kısayolları ve başlatıcılar kaldırılıyor..."
+    rm -f "$HOME/.local/share/applications/tr.gov.adalet.eimza-tray.desktop"
+    rm -f "$HOME/.local/share/applications/uyap-dokuman.desktop"
+    rm -f "$HOME/.local/share/icons/adalet-eimza-tray."* 2>/dev/null || true
+
+    # 3. Remove suite-specific binaries and libraries
+    log_info "3/4: Uygulama ve kütüphaneler temizleniyor..."
+    rm -f "$HOME/.local/bin/uyap-dokuman"
+    rm -f "$HOME/.local/bin/adalet-eimza-tray"
+    rm -f "$HOME/.local/bin/check-adalet-eimza-update"
+    rm -rf "$HOME/.local/lib/adalet-eimza-tray"
+    rm -f "$HOME/.local/lib/libakisp11.so"
+    rm -f "$HOME/.local/lib/libopensc-pkcs11.so"
+    rm -f "$HOME/.local/lib/libappindicator3"* 2>/dev/null || true
+
+    # Remove isolated Temurin JRE if installed exclusively by suite
+    if [[ -d "$HOME/.local/share/jvm/temurin-11" ]]; then
+        log_info "İzole Temurin Java 11 JRE temizleniyor..."
+        rm -rf "$HOME/.local/share/jvm/temurin-11"
+    fi
+
+    # 4. Remove CLI tool itself
+    log_info "4/4: legal-workstation CLI aracı kaldırılıyor..."
+    local self_bin="$HOME/.local/bin/legal-workstation"
+    if [[ -f "$self_bin" ]]; then
+        rm -f "$self_bin"
+    fi
+
+    log_success "Linux Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
+}
+
 cmd_help() {
     cat << EOF
 Linux Legal Workstation CLI
@@ -151,6 +212,7 @@ Komutlar:
   doctor       Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
   upgrade      Tüm araçları (Adalet E-İmza, UYAP Editör, servisler, CLI) tek komutla günceller.
   update       'upgrade' komutunun kısayoludur.
+  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır.
   start        Adalet E-İmza arka plan servisini başlatır.
   restart      Adalet E-İmza ve PC/SC servislerini yeniden başlatır.
   help         Bu yardım mesajını gösterir.
@@ -163,6 +225,9 @@ case "${1:-doctor}" in
         ;;
     upgrade|update|update-all)
         cmd_upgrade
+        ;;
+    uninstall|remove)
+        cmd_uninstall "$@"
         ;;
     start)
         systemctl --user start adalet-eimza-tray.service
