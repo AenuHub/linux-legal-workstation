@@ -32,3 +32,7 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Extended `legal-workstation uninstall` to cleanly remove UETS files and shortcuts while preserving existing certificates and system packages.
 - Container-verified clean installation on Ubuntu 22.04 LTS, Fedora, Windows PowerShell, and macOS endpoints (all tests passing with exit code 0).
 - Comprehensive review and refinement across all scripts and documentation: eliminated awkward phrasing ("Türkiye avukatları" -> "Avukatlar"), removed absolute certainty claims ("kesinlikle", "%100", etc.), updated descriptions to reflect universal multi-platform support (Linux, Windows, macOS), and harmonized banner/help/uninstall messages.
+- Fixed Windows PowerShell 5.1 parser error (`TerminatorExpectedAtEndOfString`) caused by UTF-8 byte 0x94 (`✔`) colliding with smart quote in non-BOM PowerShell sessions and here-string line delimiter sensitivity in `bin/legal-workstation.ps1`.
+- Added `.gitattributes` to enforce CRLF line endings on Windows PowerShell scripts (`*.ps1`, `*.cmd`, `*.bat`) and UTF-8 BOM encoding.
+- Harmonized ASCII banners in `install.ps1`, `install-macos.sh`, and `install.sh` to display 'Legal Workstation' without platform-specific 'Linux' prefix.
+- Explicitly marked macOS support as Experimental (Beta) / Community Testing across `README.md` and `install-macos.sh` pending physical hardware verification.

@@ -1,0 +1,20 @@
+# AI Agent & Internal Project Planning
+AGENTS.md
+STATUS.md
+RTK.md
+docs/research/
+*.plan.md
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Temporary & Log Files
+*.log
+*.tmp
+scratch/

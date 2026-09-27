@@ -6,8 +6,8 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Fedora](https://img.shields.io/badge/Fedora-51A2DA?logo=fedora&logoColor=white)](https://fedoraproject.org/)
 [![Windows](https://img.shields.io/badge/Windows_10%2F11-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
-[![macOS](https://img.shields.io/badge/macOS-Apple_Silicon_%26_Intel-000000?logo=apple&logoColor=white)](https://apple.com/macos)
-[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Tüm_Platformlar)-brightgreen)](#)
+[![macOS](https://img.shields.io/badge/macOS-Deneysel_(Beta)-yellow?logo=apple&logoColor=white)](https://apple.com/macos)
+[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_%26_Windows)-brightgreen)](#)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
 [![Gizlilik](https://img.shields.io/badge/Gizlilik-No--Exfiltration_(Tamamen_Yerel)-purple)](#gizlilik-ve-güvenlik-ilkesi)
 
@@ -152,7 +152,7 @@ legal-workstation uninstall
 - [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
 - [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
 - [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11, UETS ve PALMA entegrasyonu tamamlandı.
-- [x] **macOS (Apple Silicon & Intel):** Tek komutla bash kurulumu (`install-macos.sh`), resmi TÜBİTAK AKİS PKG, Adalet E-İmza CDN, UETS ve UYAP Editör kurulumu tamamlandı.
+- [ ] **macOS (Apple Silicon & Intel):** **Deneysel (Beta) / Topluluk Testi.** Kurulum motoru ve resmi paket bağlantıları doğrulandı; henüz gerçek bir Mac cihazında uçtan uca fiziksel donanım testi yapılmadığı için topluluk geri bildirimine ve testlerine açıktır.
 
 ---
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Legal Workstation - Windows Teşhis ve Sağlık Aracı (Doctor & Upgrade)
 .DESCRIPTION
@@ -232,9 +232,9 @@ function Invoke-Doctor {
 
     Write-Host ""
     if ($allOk) {
-        Write-Host "✔ Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!`n" -ForegroundColor Green
+        Write-Host "[HAZIR] Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!`n" -ForegroundColor Green
     } else {
-        Write-Host "⚠ Bazı bileşenlerde eksikler tespit edildi. 'install.ps1' çalıştırarak düzeltebilirsiniz.`n" -ForegroundColor Yellow
+        Write-Host "[UYARI] Bazı bileşenlerde eksikler tespit edildi. 'install.ps1' çalıştırarak düzeltebilirsiniz.`n" -ForegroundColor Yellow
     }
 }
 
@@ -340,19 +340,15 @@ function Invoke-Uninstall {
 }
 
 function Show-Help {
-    Write-Host @"
-Legal Workstation Windows CLI
-
-Kullanım:
-  legal-workstation [komut]
-
-Komutlar:
-  doctor       Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
-  upgrade      Adalet E-İmza ve UYAP bileşenlerini resmi CDN üzerinden günceller.
-  update       'upgrade' komutunun kısayoludur.
-  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır.
-  help         Bu yardım mesajını görüntüler.
-"@
+    Write-Host "Legal Workstation Windows CLI`n"
+    Write-Host "Kullanım:"
+    Write-Host "  legal-workstation [komut]`n"
+    Write-Host "Komutlar:"
+    Write-Host "  doctor       Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder."
+    Write-Host "  upgrade      Adalet E-İmza ve UYAP bileşenlerini resmi CDN üzerinden günceller."
+    Write-Host "  update       'upgrade' komutunun kısayoludur."
+    Write-Host "  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır."
+    Write-Host "  help         Bu yardım mesajını görüntüler."
 }
 
 switch ($Command) {
