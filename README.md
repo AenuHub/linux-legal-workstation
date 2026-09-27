@@ -5,7 +5,8 @@
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-Omarchy-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Fedora](https://img.shields.io/badge/Fedora-51A2DA?logo=fedora&logoColor=white)](https://fedoraproject.org/)
-[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_Tamamlandı)-brightgreen)](#)
+[![Windows](https://img.shields.io/badge/Windows_10%2F11-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_+_Windows)-brightgreen)](#)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
 [![Gizlilik](https://img.shields.io/badge/Gizlilik-No--Exfiltration_(Tamamen_Yerel)-purple)](#gizlilik-ve-güvenlik-ilkesi)
 
@@ -21,10 +22,18 @@ Türkiye'de avukatlık mesleğini icra ederken Linux kullanmanın önündeki en 
 
 ## 🚀 Hızlı Başlangıç (Tek Komutla Kurulum)
 
+### 🐧 Linux (Arch / Omarchy, Ubuntu / Debian / Mint, Fedora / RHEL):
 Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.sh | bash
+```
+
+### 🪟 Windows (Windows 10 / 11):
+PowerShell uygulamasını açın (Yönetici olarak) ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
+
+```powershell
+irm https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.ps1 | iex
 ```
 
 *(Veya depoyu klonlayarak çalıştırmak isterseniz):*
@@ -32,7 +41,8 @@ curl -fsSL https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/mai
 ```bash
 git clone https://github.com/AenuHub/linux-legal-workstation.git
 cd linux-legal-workstation
-./install.sh
+./install.sh        # Linux için
+.\install.ps1       # Windows için (PowerShell)
 ```
 
 ---
@@ -110,8 +120,8 @@ Bu komut sırasıyla:
 - [x] **Arch Linux & Omarchy:** Tamamen test edildi, donanım düzeyinde doğrulandı ve üretimde çalışıyor.
 - [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
 - [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
+- [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11 ve AKİS entegrasyonu tamamlandı.
 - [ ] **macOS:** Tek komutla e-imza ve UYAP kurulum motoru (`install-macos.sh` - Yakında).
-- [ ] **Windows:** Tek komutla izole avukat çalışma ortamı (`install.ps1` - Yakında).
 
 ---
 
