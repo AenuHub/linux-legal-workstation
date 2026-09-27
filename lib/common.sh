@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Common utilities and helper functions for Linux Legal Workstation
+# Common utilities and helper functions for Legal Workstation
 
 # Color definitions
 RED='\033[0;31m'

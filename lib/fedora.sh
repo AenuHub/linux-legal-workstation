@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fedora / Red Hat / CentOS installation engine for Linux Legal Workstation
+# Fedora / Red Hat / CentOS installation engine for Legal Workstation
 # Supported: Fedora 38+, 39+, 40+, 41+, 42+, RHEL 9+, Rocky / AlmaLinux
 
 DIR_LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"

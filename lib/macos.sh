@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS installation engine for Linux Legal Workstation (Apple Silicon & Intel)
+# macOS installation engine for Legal Workstation (Apple Silicon & Intel)
 # Supported: macOS Monterey (12+), Ventura (13+), Sonoma (14+), Sequoia (15+)
 
 DIR_LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"

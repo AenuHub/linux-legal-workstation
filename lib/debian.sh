@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Debian / Ubuntu / Linux Mint installation engine for Linux Legal Workstation
+# Debian / Ubuntu / Linux Mint installation engine for Legal Workstation
 # Supported: Ubuntu 20.04+, 22.04+, 24.04+, Debian 11/12+, Linux Mint 20/21+
 
 DIR_LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"

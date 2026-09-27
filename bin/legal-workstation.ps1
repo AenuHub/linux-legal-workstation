@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Linux Legal Workstation - Windows Teşhis ve Sağlık Aracı (Doctor & Upgrade)
+    Legal Workstation - Windows Teşhis ve Sağlık Aracı (Doctor & Upgrade)
 .DESCRIPTION
-    Türkiye avukatları için Windows ortamında UYAP, E-İmza ve akıllı kart bileşenlerini teşhis eder ve günceller.
+    Avukatlar için Windows ortamında UYAP, E-İmza ve akıllı kart bileşenlerini teşhis eder ve günceller.
 #>
 
 [CmdletBinding()]
@@ -276,8 +276,8 @@ function Invoke-Uninstall {
     param([switch]$ForceUninstall)
 
     if (-not $ForceUninstall) {
-        Write-Host "`nDİKKAT: Bu işlem Legal Workstation tarafından kurulan Adalet E-İmza servisini ve CLI araçlarını kaldıracaktır." -ForegroundColor Yellow
-        Write-Host "Sisteminizde önceden kurulu olan genel programlarınıza (kart okuyucu, sistem java vb.) dokunulmayacaktır.`n" -ForegroundColor Gray
+        Write-Host "`nDİKKAT: Bu işlem Legal Workstation tarafından kurulan Adalet E-İmza servisini, UETS dosyalarını ve CLI araçlarını kaldıracaktır." -ForegroundColor Yellow
+        Write-Host "Sisteminizde önceden kurulu olan genel programlarınıza (kart okuyucu, sistem java vb.) dokunulmayacak şekilde temizlik yapılır.`n" -ForegroundColor Gray
         $confirm = Read-Host "Kaldırma işlemine devam etmek istiyor musunuz? [e/H]"
         if ($confirm -notmatch '^[eEyY]$') {
             Write-Info "Kaldırma işlemi iptal edildi."

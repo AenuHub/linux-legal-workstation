@@ -15,7 +15,7 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Full Debian, Ubuntu and Linux Mint installation engine (`lib/debian.sh`) supporting apt-get packaging, official UYAP Editor deb installation, and systemd user services.
 - Automated container integration test (`tests/test-ubuntu-container.sh`) validating clean-room installation on Ubuntu 22.04 LTS.
 - End-to-end physical hardware verification on Omarchy Linux: successfully tested token reader (ACS ACR39U), TÜBİTAK UEKAE AKİS v2.2 card, PIN authentication, and generated signed UDF document containing cryptographic `sign.sgn`.
-- Integrated official TÜBİTAK AKİS (`Akia_linux_6_8_10.deb` supplying `libakisp11.so` and AKİA) into Debian/Ubuntu engine, ensuring 100% driver parity for TÜBİTAK UEKAE AKİS v2.2 chipsets on Ubuntu, Debian, and Linux Mint.
+- Integrated official TÜBİTAK AKİS (`Akia_linux_6_8_10.deb` supplying `libakisp11.so` and AKİA) into Debian/Ubuntu engine, ensuring native driver support for TÜBİTAK UEKAE AKİS v2.2 chipsets on Ubuntu, Debian, and Linux Mint.
 - Full Fedora, Red Hat Enterprise Linux (RHEL), Rocky and AlmaLinux engine (`lib/fedora.sh`) with native DNF package resolution, official TÜBİTAK AKİS RPM installation, isolated Eclipse Temurin Java 11 JRE runtime fallback, and automated clean-room container verification test (`tests/test-fedora-container.sh`).
 - Enhanced `legal-workstation doctor` to detect user-isolated Temurin Java 11 JRE and alternate distro JVM paths.
 - Windows 10/11 one-command installation engine (`install.ps1`) supporting self-elevation, SCardSvr service management, Adoptium Eclipse Temurin 11 MSI, official TÜBİTAK AKİS Windows x64 MSI, UYAP UKI MSI, and dynamic Adalet E-İmza CDN installation.
@@ -31,3 +31,4 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Extended `legal-workstation doctor` with PTT UETS and AKİA/PALMA component checks across all platforms.
 - Extended `legal-workstation uninstall` to cleanly remove UETS files and shortcuts while preserving existing certificates and system packages.
 - Container-verified clean installation on Ubuntu 22.04 LTS, Fedora, Windows PowerShell, and macOS endpoints (all tests passing with exit code 0).
+- Comprehensive review and refinement across all scripts and documentation: eliminated awkward phrasing ("Türkiye avukatları" -> "Avukatlar"), removed absolute certainty claims ("kesinlikle", "%100", etc.), updated descriptions to reflect universal multi-platform support (Linux, Windows, macOS), and harmonized banner/help/uninstall messages.

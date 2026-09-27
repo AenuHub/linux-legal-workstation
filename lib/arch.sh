@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Arch Linux & Omarchy installation engine for Linux Legal Workstation
+# Arch Linux & Omarchy installation engine for Legal Workstation
 
 # Ensure common helpers are loaded
 DIR_LIB="$(cd "$(dirname "${BASHASH_SOURCE[0]:-$0}")" && pwd)"

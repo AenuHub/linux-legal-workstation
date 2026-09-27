@@ -4,7 +4,7 @@ set -euo pipefail
 
 DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "==> Linux Legal Workstation - Windows PowerShell Sözdizimi ve Mantık Testi Başlatılıyor..."
+echo "==> Legal Workstation - Windows PowerShell Sözdizimi ve Mantık Testi Başlatılıyor..."
 
 docker run --rm \
     -v "$DIR_ROOT:/workspace" \
@@ -51,6 +51,6 @@ docker run --rm \
     '
 
 echo
-echo "==> [BAŞARILI] Windows PowerShell entegrasyon ve sözdizimi testi eksiksiz geçti!"
+echo "==> [BAŞARILI] Windows PowerShell entegrasyon ve sözdizimi testi başarıyla tamamlandı!"
 
 

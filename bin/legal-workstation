@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# legal-workstation - Turkish Legal Workstation CLI & Diagnostic Tool
+# legal-workstation - Legal Workstation CLI & Diagnostic Tool
 # Repository: https://github.com/AenuHub/linux-legal-workstation
 
 set -euo pipefail
@@ -167,7 +167,7 @@ cmd_doctor() {
 
 
 cmd_upgrade() {
-    log_step "Linux Legal Workstation - Hukuk Paketi Güncelleniyor..."
+    log_step "Legal Workstation - Hukuk Paketi Güncelleniyor..."
 
     # 1. Self-update CLI and scripts
     log_info "1/4: Hukuk çalışma istasyonu betikleri kontrol ediliyor..."
@@ -212,8 +212,8 @@ cmd_uninstall() {
     fi
 
     if [[ "$force" != true ]]; then
-        printf "${YELLOW}${BOLD}DİKKAT:${NC} Bu işlem Linux Legal Workstation tarafından kurulan servisleri, başlatıcıları ve dosyaları sisteminizden kaldıracaktır.\n"
-        printf "Daha önce sisteminizde manuel olarak kurulu olan genel sistem paketlerinize (kart okuyucu, sistem java vb.) dokunulmayacaktır.\n\n"
+        printf "${YELLOW}${BOLD}DİKKAT:${NC} Bu işlem Legal Workstation tarafından kurulan servisleri, başlatıcıları ve dosyaları sisteminizden kaldıracaktır.\n"
+        printf "Daha önce sisteminizde manuel olarak kurulu olan genel sistem paketlerinize (kart okuyucu, sistem java vb.) dokunulmayacak şekilde temizlik yapılır.\n\n"
         read -r -p "Kaldırma işlemine devam etmek istiyor musunuz? [e/H] " confirm
         if [[ "$confirm" != "e" && "$confirm" != "E" && "$confirm" != "y" && "$confirm" != "Y" ]]; then
             log_info "Kaldırma işlemi iptal edildi."
@@ -240,7 +240,7 @@ cmd_uninstall() {
         return 0
     fi
 
-    log_step "Linux Legal Workstation kaldırılıyor..."
+    log_step "Hukuk Çalışma İstasyonu kaldırılıyor..."
 
     # 1. Stop and disable Adalet E-İmza tray service
     log_info "1/4: Arka plan servisleri durduruluyor ve temizleniyor..."
@@ -293,12 +293,12 @@ cmd_uninstall() {
         rm -f "$self_bin"
     fi
 
-    log_success "Linux Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
+    log_success "Hukuk Çalışma İstasyonu başarıyla kaldırıldı. Sisteminiz temizlendi."
 }
 
 cmd_help() {
     cat << EOF
-Linux Legal Workstation CLI
+Legal Workstation CLI
 
 Kullanım:
   legal-workstation [komut]

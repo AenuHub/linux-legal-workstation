@@ -1,6 +1,6 @@
-# Linux Legal Workstation ⚖️🐧
+# Legal Workstation ⚖️💻
 
-> **Türkiye'deki avukatlar için Linux üzerinde tek komutla UYAP, E-İmza ve UDF çalışma ortamı.**
+> **Avukatlar için tek komutla UYAP, E-İmza, UETS ve UDF çalışma ortamı (Linux, Windows, macOS).**
 
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-Omarchy-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
@@ -15,9 +15,9 @@
 
 ## 🎯 Problem ve Vizyon
 
-Türkiye'de avukatlık mesleğini icra ederken Linux kullanmanın önündeki en büyük engel; e-imza sürücülerinin (Kamu SM, TÜBİTAK AKİS vb.), kart okuyucuların (PC/SC), UYAP Doküman Editörü (.udf açma ve imzalama) ile Avukat Portalı girişlerinin kurulumundaki teknik zorluklardı. Avukatlar internetteki dağınık, güncelliğini yitirmiş blog yazıları veya Java çakışmaları arasında kaybolup çoğu zaman mecburen Windows'a geri dönmekteydi.
+Avukatlık mesleğini icra ederken farklı işletim sistemlerinde e-imza sürücülerinin (Kamu SM, TÜBİTAK AKİS vb.), akıllı kart okuyucuların (PC/SC), UYAP Doküman Editörü (.udf açma ve imzalama), UETS ve Avukat Portalı girişlerinin kurulumundaki teknik karmaşıklıklar zaman kaybına yol açabilmektedir. İnternetteki dağınık, güncelliğini yitirmiş blog yazıları veya Java sürüm uyuşmazlıkları avukatların iş akışını zorlaştırmaktadır.
 
-**Linux Legal Workstation**, bu engelleri tamamen ortadan kaldırır. Tek bir komutla tüm akıllı kart altyapısını, UYAP Editörü'nü ve resmi Adalet E-İmza entegrasyonunu sisteminize kurar ve doğrular.
+**Legal Workstation**, bu teknik engelleri aşmayı ve gerekli çalışma ortamını pratik bir şekilde kurmayı hedefler. Tek bir komutla akıllı kart altyapısını, UYAP Editörü'nü, resmi Adalet E-İmza entegrasyonunu, UETS istemcisini ve kart yönetim araçlarını sisteminize kurar ve yapılandırır.
 
 ---
 
@@ -142,17 +142,17 @@ legal-workstation uninstall
 *(Windows için de PowerShell veya CMD üzerinden aynı komut geçerlidir: `legal-workstation uninstall`)*
 
 > [!NOTE]
-> **Güvenlik ve İzolasyon İlkesi:** Bu kaldırma komutu **yalnızca** bu aracın kurduğu servisleri, başlatıcıları ve izole bileşenleri kaldırır. Bilgisayarınızda önceden veya manuel olarak kurulu olan genel sistem paketlerinize, sürücülerinize ya da dosyalarınıza kesinlikle dokunmaz.
+> **Güvenlik ve İzolasyon İlkesi:** Bu kaldırma komutu **yalnızca** bu aracın kurduğu servisleri, başlatıcıları ve izole bileşenleri kaldırır. Bilgisayarınızda önceden veya manuel olarak kurulu olan genel sistem paketlerinize, sürücülerinize ya da kişisel dosyalarınıza dokunmayacak şekilde tasarlanmıştır.
 
 ---
 
 ## 🗺️ Desteklenen Platformlar ve Yol Haritası
 
-- [x] **Arch Linux & Omarchy:** Tamamen test edildi, donanım düzeyinde doğrulandı ve üretimde çalışıyor.
+- [x] **Arch Linux & Omarchy:** Donanım düzeyinde fiziksel olarak (ACS ACR39U + AKİS v2.2) test edildi ve üretimde doğrulandı.
 - [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
 - [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
-- [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11 ve AKİS entegrasyonu tamamlandı.
-- [x] **macOS (Apple Silicon & Intel):** Tek komutla bash kurulumu (`install-macos.sh`), resmi TÜBİTAK AKİS PKG, Adalet E-İmza CDN ve UYAP Editör kurulumu tamamlandı.
+- [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11, UETS ve PALMA entegrasyonu tamamlandı.
+- [x] **macOS (Apple Silicon & Intel):** Tek komutla bash kurulumu (`install-macos.sh`), resmi TÜBİTAK AKİS PKG, Adalet E-İmza CDN, UETS ve UYAP Editör kurulumu tamamlandı.
 
 ---
 

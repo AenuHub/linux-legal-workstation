@@ -1,4 +1,4 @@
-# Linux Legal Workstation - Turkish Legal Workstation Windows Installer
+# Legal Workstation - Avukatlar İçin Windows Kurulum Betiği
 # Repository: https://github.com/AenuHub/linux-legal-workstation
 
 [CmdletBinding()]
@@ -50,7 +50,7 @@ function Print-Banner {
 "@
     Write-Host $banner -ForegroundColor DarkCyan
     Write-Host "========================================================================" -ForegroundColor Cyan
-    Write-Host "  Türkiye Avukatları İçin Tek Komutla Windows Çalışma İstasyonu Kurulumu" -ForegroundColor White
+    Write-Host "  Avukatlar İçin Tek Komutla Windows Hukuk Çalışma İstasyonu Kurulumu" -ForegroundColor White
     Write-Host "========================================================================`n" -ForegroundColor Cyan
 }
 

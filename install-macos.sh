@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS Legal Workstation - Turkish Legal Workstation One-Click Installer for macOS
+# macOS Legal Workstation - Avukatlar İçin Tek Komutla macOS Kurulum Betiği
 # Repository: https://github.com/AenuHub/linux-legal-workstation
 
 set -euo pipefail
@@ -22,7 +22,7 @@ print_banner() {
                                            |___/                                                                      
 EOF
     printf "${BOLD}========================================================================${NC}\n"
-    printf "${CYAN}  Türkiye Avukatları İçin Tek Komutla macOS Çalışma İstasyonu Kurulumu${NC}\n"
+    printf "${CYAN}  Avukatlar İçin Tek Komutla macOS Hukuk Çalışma İstasyonu Kurulumu${NC}\n"
     printf "${BOLD}========================================================================${NC}\n\n"
 }
 

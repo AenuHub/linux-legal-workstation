@@ -4,7 +4,7 @@ set -euo pipefail
 
 DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "==> Linux Legal Workstation - macOS Kurulum Motoru Doğrulama Testi Başlatılıyor..."
+echo "==> Legal Workstation - macOS Kurulum Motoru Doğrulama Testi Başlatılıyor..."
 
 echo "==> 1. Sözdizimi Analizi (bash -n)..."
 bash -n "$DIR_ROOT/install-macos.sh"
@@ -77,5 +77,5 @@ fi
 echo "  -> [GEÇTİ] PTT UETS E-İmza resmi istemcisi canlı ve erişilebilir."
 
 echo
-echo "==> [BAŞARILI] macOS motoru uçtan uca kaynak ve sözdizimi doğrulaması eksiksiz geçti!"
+echo "==> [BAŞARILI] macOS motoru uçtan uca kaynak ve sözdizimi doğrulaması başarıyla tamamlandı!"
 

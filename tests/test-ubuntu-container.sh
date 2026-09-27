@@ -4,7 +4,7 @@ set -euo pipefail
 
 DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "==> Linux Legal Workstation - Ubuntu 22.04 Temiz Konteyner Doğrulama Testi Başlatılıyor..."
+echo "==> Legal Workstation - Ubuntu 22.04 Temiz Konteyner Doğrulama Testi Başlatılıyor..."
 
 docker run --rm \
     -v "$DIR_ROOT:/workspace" \
@@ -13,4 +13,4 @@ docker run --rm \
     bash -c "/workspace/install.sh && /root/.local/bin/legal-workstation doctor"
 
 echo
-echo "==> [BAŞARILI] Ubuntu konteyner entegrasyon testi eksiksiz geçti!"
+echo "==> [BAŞARILI] Ubuntu konteyner entegrasyon testi başarıyla tamamlandı!"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Linux Legal Workstation - Turkish Legal Workstation One-Click Installer
+# Legal Workstation - Avukatlar İçin Kurulum Betiği
 # Repository: https://github.com/AenuHub/linux-legal-workstation
 
 set -euo pipefail
@@ -20,7 +20,7 @@ print_banner() {
                                            |___/                                                                      
 EOF
     printf "${BOLD}========================================================================${NC}\n"
-    printf "${CYAN}  Türkiye Avukatları İçin Tek Komutla Linux Çalışma İstasyonu Kurulumu${NC}\n"
+    printf "${CYAN}  Avukatlar İçin Tek Komutla Hukuk Çalışma İstasyonu Kurulumu${NC}\n"
     printf "${BOLD}========================================================================${NC}\n\n"
 }
 
@@ -68,7 +68,7 @@ main() {
     log_step "Kurulum Tamamlandı! Teşhis ve Doğrulama Yapılıyor..."
     "$HOME/.local/bin/legal-workstation" doctor
 
-    printf "\n${GREEN}${BOLD}Tebrikler! Linux Hukuk Çalışma İstasyonu başarıyla kuruldu.${NC}\n"
+    printf "\n${GREEN}${BOLD}Tebrikler! Hukuk Çalışma İstasyonu başarıyla kuruldu.${NC}\n"
     printf "İstediğiniz zaman terminalden ${CYAN}legal-workstation doctor${NC} komutunu çalıştırabilirsiniz.\n\n"
 }
 
