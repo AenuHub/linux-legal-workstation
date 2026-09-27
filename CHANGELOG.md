@@ -23,3 +23,6 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Automated container integration test for Windows PowerShell scripts (`tests/test-windows-powershell.sh`) using official Microsoft PowerShell container.
 - Non-destructive unified uninstall command (`legal-workstation uninstall`) for both Linux and Windows, removing suite-specific services, launchers, and isolation files while strictly protecting pre-existing user software and drivers.
 - Container-verified clean installation and uninstallation test on Ubuntu and Fedora.
+- macOS installation engine (`install-macos.sh` and `lib/macos.sh`) with automatic architecture detection (Apple Silicon ARM64 & Intel x86_64), official TÜBİTAK AKİS PKG installation, UYAP Doküman Editörü setup with Gatekeeper quarantine removal (`xattr -cr`), and Adalet E-İmza macOS tray integration.
+- macOS support in `legal-workstation doctor` (CryptoTokenKit and reader detection) and `legal-workstation uninstall`.
+- Automated test script (`tests/test-macos-syntax.sh`) verifying macOS bash syntax and live HTTP 200 responses from all official TÜBİTAK, UYAP, and CDN endpoints.

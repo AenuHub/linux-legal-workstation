@@ -20,19 +20,66 @@ source "$DIR_ROOT/lib/common.sh" 2>/dev/null || {
 
 cmd_doctor() {
     printf "${BOLD}=====================================================${NC}\n"
-    printf "${BOLD}  Linux Legal Workstation - Teşhis ve Sağlık Kontrolü${NC}\n"
+    printf "${BOLD}  Legal Workstation - Teşhis ve Sağlık Kontrolü${NC}\n"
     printf "${BOLD}=====================================================${NC}\n\n"
 
     local all_ok=true
 
-    # 1. PCSC Daemon
-    printf "%-35s" "1. Akıllı Kart Servisi (pcscd):"
-    if systemctl is-active --quiet pcscd.socket 2>/dev/null || systemctl is-active --quiet pcscd 2>/dev/null; then
-        printf "${GREEN}[ÇALIŞIYOR]${NC}\n"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        # 1. macOS Smart Card Subsystem
+        printf "%-35s" "1. Akıllı Kart Altyapısı:"
+        printf "${GREEN}[ÇALIŞIYOR]${NC} (macOS CryptoTokenKit)\n"
+
+        # 2. Smart Card Reader
+        printf "%-35s" "2. Kart Okuyucu / USB Token:"
+        local readers_mac=""
+        if has_cmd system_profiler; then
+            readers_mac=$(system_profiler SPSmartCardsDataType 2>/dev/null | grep -i "Reader:" | head -n 1 | awk -F': ' '{print $2}' || true)
+        fi
+        if [[ -n "$readers_mac" ]]; then
+            printf "${GREEN}[ALGILANDI]${NC} (%s)\n" "$readers_mac"
+        else
+            printf "${YELLOW}[KART OKUYUCU TAKILI DEĞİL]${NC} (Lütfen e-imza USB token'ınızı takın)\n"
+        fi
+
+        # 3. Adalet E-İmza Tray
+        printf "%-35s" "3. Adalet E-İmza Servisi:"
+        if pgrep -f "adalet-eimza-tray" >/dev/null 2>&1; then
+            printf "${GREEN}[ÇALIŞIYOR]${NC}\n"
+        elif [[ -d "/Applications/Adalet E-İmza Tray.app" ]]; then
+            printf "${YELLOW}[KAPALI]${NC} -> 'open -a \"/Applications/Adalet E-İmza Tray.app\"'\n"
+        else
+            printf "${RED}[YOK]${NC} -> Adalet E-İmza kurulu değil.\n"
+            all_ok=false
+        fi
+
+        # 4. Java Runtime
+        printf "%-35s" "4. UYAP Uyumlu Java:"
+        if [[ -x "/Applications/UyapDokumanEditoru.app/Contents/runtime/bin/java" ]]; then
+            printf "${GREEN}[MEVCUT]${NC} (UYAP Dahili Gömülü JRE)\n"
+        elif has_cmd java; then
+            printf "${GREEN}[MEVCUT]${NC} (%s)\n" "$(java -version 2>&1 | head -n 1)"
+        else
+            printf "${GREEN}[MEVCUT]${NC} (UYAP Paketine Dahil)\n"
+        fi
+
+        # 5. UYAP Editor
+        printf "%-35s" "5. UYAP Doküman Editörü:"
+        if [[ -d "/Applications/UyapDokumanEditoru.app" || -d "$HOME/Applications/UyapDokumanEditoru.app" ]]; then
+            printf "${GREEN}[HAZIR]${NC} (/Applications/UyapDokumanEditoru.app)\n"
+        else
+            printf "${RED}[YOK]${NC} -> UYAP Editörü kurulu değil.\n"
+            all_ok=false
+        fi
     else
-        printf "${RED}[DURDURULMUŞ]${NC} -> 'sudo systemctl start pcscd'\n"
-        all_ok=false
-    fi
+        # 1. PCSC Daemon
+        printf "%-35s" "1. Akıllı Kart Servisi (pcscd):"
+        if systemctl is-active --quiet pcscd.socket 2>/dev/null || systemctl is-active --quiet pcscd 2>/dev/null; then
+            printf "${GREEN}[ÇALIŞIYOR]${NC}\n"
+        else
+            printf "${RED}[DURDURULMUŞ]${NC} -> 'sudo systemctl start pcscd'\n"
+            all_ok=false
+        fi
 
     # 2. Card Reader & Token check
     printf "%-35s" "2. Kart Okuyucu / USB Token:"
@@ -91,6 +138,7 @@ cmd_doctor() {
     else
         printf "${RED}[YOK]${NC} -> UYAP Editörü kurulu değil.\n"
         all_ok=false
+    fi
     fi
 
     printf "\n"
@@ -154,6 +202,24 @@ cmd_uninstall() {
             log_info "Kaldırma işlemi iptal edildi."
             exit 0
         fi
+    fi
+
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        log_step "macOS Legal Workstation kaldırılıyor..."
+
+        log_info "1/3: Çalışan süreçler ve başlangıç öğeleri temizleniyor..."
+        pkill -f "adalet-eimza-tray" 2>/dev/null || true
+        osascript -e 'tell application "System Events" to delete login item "Adalet E-İmza Tray"' 2>/dev/null || true
+
+        log_info "2/3: Uygulamalar kaldırılıyor..."
+        sudo rm -rf "/Applications/Adalet E-İmza Tray.app" 2>/dev/null || true
+        sudo rm -rf "/Applications/UyapDokumanEditoru.app" 2>/dev/null || true
+
+        log_info "3/3: legal-workstation CLI aracı kaldırılıyor..."
+        sudo rm -f "/usr/local/bin/legal-workstation" "$HOME/.local/bin/legal-workstation" 2>/dev/null || true
+
+        log_success "macOS Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
+        return 0
     fi
 
     log_step "Linux Legal Workstation kaldırılıyor..."

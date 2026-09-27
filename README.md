@@ -6,7 +6,8 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Fedora](https://img.shields.io/badge/Fedora-51A2DA?logo=fedora&logoColor=white)](https://fedoraproject.org/)
 [![Windows](https://img.shields.io/badge/Windows_10%2F11-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
-[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_+_Windows)-brightgreen)](#)
+[![macOS](https://img.shields.io/badge/macOS-Apple_Silicon_%26_Intel-000000?logo=apple&logoColor=white)](https://apple.com/macos)
+[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Tüm_Platformlar)-brightgreen)](#)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
 [![Gizlilik](https://img.shields.io/badge/Gizlilik-No--Exfiltration_(Tamamen_Yerel)-purple)](#gizlilik-ve-güvenlik-ilkesi)
 
@@ -36,6 +37,13 @@ PowerShell uygulamasını açın (Yönetici olarak) ve aşağıdaki komutu yapı
 irm https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.ps1 | iex
 ```
 
+### 🍎 macOS (Apple Silicon M1-M4 & Intel):
+Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install-macos.sh | bash
+```
+
 *(Veya depoyu klonlayarak çalıştırmak isterseniz):*
 
 ```bash
@@ -43,6 +51,7 @@ git clone https://github.com/AenuHub/linux-legal-workstation.git
 cd linux-legal-workstation
 ./install.sh        # Linux için
 .\install.ps1       # Windows için (PowerShell)
+./install-macos.sh  # macOS için
 ```
 
 ---
@@ -136,7 +145,7 @@ legal-workstation uninstall
 - [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
 - [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
 - [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11 ve AKİS entegrasyonu tamamlandı.
-- [ ] **macOS:** Tek komutla e-imza ve UYAP kurulum motoru (`install-macos.sh` - Yakında).
+- [x] **macOS (Apple Silicon & Intel):** Tek komutla bash kurulumu (`install-macos.sh`), resmi TÜBİTAK AKİS PKG, Adalet E-İmza CDN ve UYAP Editör kurulumu tamamlandı.
 
 ---
 

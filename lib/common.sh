@@ -38,6 +38,11 @@ has_cmd() {
 
 # Detect Distribution
 detect_os() {
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        echo "macos"
+        return 0
+    fi
+
     if [[ -f /etc/os-release ]]; then
         # shellcheck disable=SC1091
         . /etc/os-release
