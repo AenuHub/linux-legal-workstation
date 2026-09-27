@@ -61,11 +61,22 @@ cmd_doctor() {
     # 4. Java Runtime for UYAP
     printf "%-35s" "4. UYAP Uyumlu Java (8/11):"
     local java_found=false
-    for jpath in /usr/lib/jvm/java-11-*/bin/java /usr/lib/jvm/java-8-*/bin/java /usr/lib/jvm/java-11-*/jre/bin/java; do
+    for jpath in \
+        "$HOME/.local/share/jvm/temurin-11/bin/java" \
+        /usr/lib/jvm/java-11-*/bin/java \
+        /usr/lib/jvm/java-8-*/bin/java \
+        /usr/lib/jvm/java-1.8.0-openjdk/bin/java \
+        /usr/lib/jvm/java-11-openjdk*/bin/java \
+        /usr/lib/jvm/java-11-*/jre/bin/java \
+        /usr/bin/java; do
         if [[ -x "$jpath" ]]; then
-            java_found=true
-            printf "${GREEN}[MEVCUT]${NC} (%s)\n" "$("$jpath" -version 2>&1 | head -n 1)"
-            break
+            local jver
+            jver=$("$jpath" -version 2>&1 | head -n 1)
+            if echo "$jver" | grep -qE '(11\.|1\.8\.)'; then
+                java_found=true
+                printf "${GREEN}[MEVCUT]${NC} (%s)\n" "$jver"
+                break
+            fi
         fi
     done
     if [[ "$java_found" != true ]]; then

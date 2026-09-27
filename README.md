@@ -3,7 +3,9 @@
 > **Türkiye'deki avukatlar için Linux üzerinde tek komutla UYAP, E-İmza ve UDF çalışma ortamı.**
 
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-Omarchy-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
-[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Phase_1)-brightgreen)](#)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
+[![Fedora](https://img.shields.io/badge/Fedora-51A2DA?logo=fedora&logoColor=white)](https://fedoraproject.org/)
+[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_Tamamlandı)-brightgreen)](#)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
 [![Gizlilik](https://img.shields.io/badge/Gizlilik-No--Exfiltration_(Tamamen_Yerel)-purple)](#gizlilik-ve-güvenlik-ilkesi)
 
@@ -105,11 +107,11 @@ Bu komut sırasıyla:
 
 ## 🗺️ Desteklenen Platformlar ve Yol Haritası
 
-- [x] **Arch Linux & Omarchy:** Tamamen test edildi, doğrulandı ve üretimde çalışıyor.
-- [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi (`lib/debian.sh`).
-- [ ] **Fedora / Red Hat:** Planlama aşamasında (`lib/fedora.sh`).
-- [ ] **macOS:** Tek komutla e-imza ve UYAP kurulum motoru (İleri Aşama).
-- [ ] **Windows:** Tek tık / tek komutla izole avukat çalışma ortamı (İleri Aşama).
+- [x] **Arch Linux & Omarchy:** Tamamen test edildi, donanım düzeyinde doğrulandı ve üretimde çalışıyor.
+- [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
+- [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
+- [ ] **macOS:** Tek komutla e-imza ve UYAP kurulum motoru (`install-macos.sh` - Yakında).
+- [ ] **Windows:** Tek komutla izole avukat çalışma ortamı (`install.ps1` - Yakında).
 
 ---
 
