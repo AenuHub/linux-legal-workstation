@@ -26,3 +26,8 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - macOS installation engine (`install-macos.sh` and `lib/macos.sh`) with automatic architecture detection (Apple Silicon ARM64 & Intel x86_64), official TÜBİTAK AKİS PKG installation, UYAP Doküman Editörü setup with Gatekeeper quarantine removal (`xattr -cr`), and Adalet E-İmza macOS tray integration.
 - macOS support in `legal-workstation doctor` (CryptoTokenKit and reader detection) and `legal-workstation uninstall`.
 - Automated test script (`tests/test-macos-syntax.sh`) verifying macOS bash syntax and live HTTP 200 responses from all official TÜBİTAK, UYAP, and CDN endpoints.
+- PTT UETS (Ulusal Elektronik Tebligat Sistemi) E-İmza İstemcisi cross-platform integration across Linux (Arch/Omarchy, Ubuntu/Debian, Fedora), macOS (`/Applications/PTT UETS E-İmza.app`), and Windows (`install.ps1`), including desktop launcher shortcuts and official branding icon.
+- E-İmza Kart & PIN Yönetimi (PALMA / AKİA) cross-platform integration: Windows silent installation of official TBB TÜRKTRUST/BaroKart PALMA, and Linux/macOS native AKİA desktop launcher with search keywords (`palma`, `pin`, `puk`, `blokaj`, `sertifika`, `turktrust`, `barokart`) for desktop runners (Omarchy-shell, Rofi/Wofi, GNOME, Spotlight).
+- Extended `legal-workstation doctor` with PTT UETS and AKİA/PALMA component checks across all platforms.
+- Extended `legal-workstation uninstall` to cleanly remove UETS files and shortcuts while preserving existing certificates and system packages.
+- Container-verified clean installation on Ubuntu 22.04 LTS, Fedora, Windows PowerShell, and macOS endpoints (all tests passing with exit code 0).

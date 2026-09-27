@@ -309,4 +309,7 @@ debian_install_all() {
     debian_install_akia
     debian_install_uyap_editor
     debian_install_adalet_eimza
+    common_install_uets
+    common_ensure_akia_desktop
 }
+

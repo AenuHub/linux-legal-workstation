@@ -77,8 +77,13 @@ Bu kurulum aracı sisteminizde sırasıyla şu katmanları hazırlar:
    - Kullanıcı oturum açtığında otomatik çalışan `systemd --user` servis entegrasyonu.
    - Tek komutla sürüm güncelleme mekanizması (`legal-workstation update`).
 
-4. **AKİS / AKİA (TÜBİTAK Kart İzleme Aracı):**
-   - E-imza PIN kodunu değiştirme, bloke kaldırma ve sertifika geçerlilik sürelerini kontrol etmek için AKİA entegrasyonu.
+4. **PTT UETS (Ulusal Elektronik Tebligat Sistemi) E-İmza İstemcisi:**
+   - Resmi PTT UETS sunucusundan son sürüm e-imza istemcisi (`uets-eimza.jar`) otomatik kurulumu.
+   - Masaüstü uygulama menüsünde ve uygulama başlatıcılarda (Omarchy-shell, Rofi/Wofi, GNOME, Başlat Menüsü, Spotlight) arama ile doğrudan erişim.
+
+5. **E-İmza Kart & PIN Yönetimi (PALMA / AKİA):**
+   - **Windows:** Türkiye Barolar Birliği (TBB) resmi dağıtımı olan TÜRKTRUST / BaroKart **PALMA** uygulamasının sessiz kurulumu.
+   - **Linux & macOS:** TÜRKTRUST, BaroKart ve TÜBİTAK akıllı kartları için yerel **AKİA** kart yöneticisi. Masaüstü arama menülerinde `palma`, `pin`, `puk`, `blokaj`, `sertifika` anahtar kelimeleriyle anında erişim.
 
 ---
 
@@ -93,14 +98,16 @@ legal-workstation doctor
 **Örnek Çıktı:**
 ```text
 =====================================================
-  Linux Legal Workstation - Teşhis ve Sağlık Kontrolü
+  Legal Workstation - Teşhis ve Sağlık Kontrolü
 =====================================================
 
 1. Akıllı Kart Servisi (pcscd):  [ÇALIŞIYOR]
-2. Kart Okuyucu / USB Token:       [ALGILANDI] (ACS ACR38U-CCID)
+2. Kart Okuyucu / USB Token:       [ALGILANDI] (ACS ACR39U ICC Reader)
 3. Adalet E-İmza Servisi:         [ÇALIŞIYOR]
 4. UYAP Uyumlu Java (8/11):        [MEVCUT] (openjdk version 11.0.32)
 5. UYAP Doküman Editörü:        [HAZIR]
+6. PTT UETS E-İmza İstemcisi:    [HAZIR]
+7. E-İmza PIN & Kart (AKİA):     [HAZIR]
 
 ✔ Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!
 ```

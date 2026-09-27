@@ -36,9 +36,21 @@ docker run --rm \
         Write-Host "  Adalet E-İmza Windows Sürümü: $($cdn.releases.windows.latestVersion)" -ForegroundColor Green
         Write-Host "  Windows İndirme Adresi: $($cdn.releases.windows.downloadUrl)" -ForegroundColor Green
 
-        Write-Host "`n==> 4. CLI Doctor Komutu Test Ediliyor..." -ForegroundColor Cyan
+        Write-Host "`n==> 4. PTT UETS ve TBB PALMA İndirme Bağlantıları Test Ediliyor..." -ForegroundColor Cyan
+        $uetsUrl = "https://api.etebligat.gov.tr/v1/auth/_eimza/uets-eimza.jar"
+        $palmaUrl = "https://e-imza.barobirlik.org.tr/program/PALMA_2.9_64bit_Setup_A2.7_G10.8_b24020501.exe"
+        
+        $uetsResp = Invoke-WebRequest -Uri $uetsUrl -Headers @{ "Range" = "bytes=0-1024" } -TimeoutSec 10 -UseBasicParsing
+        Write-Host "  PTT UETS İstemci HTTP Durumu: $($uetsResp.StatusCode)" -ForegroundColor Green
+        
+        $palmaResp = Invoke-WebRequest -Uri $palmaUrl -Method Head -TimeoutSec 10 -UseBasicParsing
+        Write-Host "  TBB PALMA Kurulum HTTP Durumu: $($palmaResp.StatusCode)" -ForegroundColor Green
+
+        Write-Host "`n==> 5. CLI Doctor Komutu Test Ediliyor..." -ForegroundColor Cyan
         & /workspace/bin/legal-workstation.ps1 doctor
     '
 
 echo
 echo "==> [BAŞARILI] Windows PowerShell entegrasyon ve sözdizimi testi eksiksiz geçti!"
+
+

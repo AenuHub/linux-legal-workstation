@@ -252,7 +252,82 @@ function Install-AdaletEimza {
     }
 }
 
-# 6. Install CLI Tools & Add to PATH
+# 6. Install TÜRKTRUST / BaroKart PALMA Smart Card Management (PIN & Blokaj)
+function Install-Palma {
+    Write-Step "6/7: TÜRKTRUST / BaroKart PALMA (PIN & Blokaj Yönetimi) kuruluyor..."
+
+    $palmaInstalled = $false
+    $palmaPaths = @(
+        "$env:ProgramFiles\TURKTRUST\Palma\PALMA.exe",
+        "${env:ProgramFiles(x86)}\TURKTRUST\Palma\PALMA.exe"
+    )
+    foreach ($p in $palmaPaths) {
+        if (Test-Path $p) {
+            $palmaInstalled = $true
+            break
+        }
+    }
+
+    if ($palmaInstalled) {
+        Write-Info "PALMA akıllı kart yönetim uygulaması zaten kurulu."
+    } else {
+        $palmaUrl = "https://e-imza.barobirlik.org.tr/program/PALMA_2.9_64bit_Setup_A2.7_G10.8_b24020501.exe"
+        $tmpPalma = Join-Path $env:TEMP "Palma_Setup.exe"
+
+        try {
+            Write-Info "Resmi TBB sunucusundan PALMA kurulum paketi indiriliyor..."
+            Invoke-WebRequest -Uri $palmaUrl -OutFile $tmpPalma -UseBasicParsing
+            Write-Info "PALMA kuruluyor (Sessiz kurulum)..."
+            Start-Process -FilePath $tmpPalma -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+            Remove-Item $tmpPalma -Force -ErrorAction SilentlyContinue
+            Write-Success "PALMA (PIN oluşturma ve blokaj kaldırma aracı) başarıyla kuruldu."
+        } catch {
+            Write-Warn "PALMA kurulurken uyarı alındı: $_"
+        }
+    }
+}
+
+# 7. Install PTT UETS E-İmza Client
+function Install-Uets {
+    Write-Step "7/7: PTT UETS (Ulusal Elektronik Tebligat Sistemi) E-İmza İstemcisi kuruluyor..."
+
+    $uetsDir = Join-Path $env:ProgramFiles "PTT\UETS"
+    $uetsJar = Join-Path $uetsDir "uets-eimza.jar"
+    $uetsUrl = "https://api.etebligat.gov.tr/v1/auth/_eimza/uets-eimza.jar"
+
+    try {
+        if (-not (Test-Path $uetsDir)) {
+            New-Item -Path $uetsDir -ItemType Directory -Force | Out-Null
+        }
+
+        Write-Info "Resmi PTT UETS sunucusundan uets-eimza.jar indiriliyor..."
+        Invoke-WebRequest -Uri $uetsUrl -OutFile $uetsJar -UseBasicParsing
+
+        # Create Start Menu shortcut
+        if ($PSVersionTable.Platform -ne 'Unix') {
+            try {
+                $shell = New-Object -ComObject WScript.Shell
+                $shortcutPath = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\PTT UETS E-İmza.lnk"
+                $shortcut = $shell.CreateShortcut($shortcutPath)
+                
+                $javawCmd = Get-Command javaw.exe -ErrorAction SilentlyContinue
+                $javawPath = if ($javawCmd) { $javawCmd.Source } else { "javaw.exe" }
+                
+                $shortcut.TargetPath = $javawPath
+                $shortcut.Arguments = "-jar `"$uetsJar`""
+                $shortcut.WorkingDirectory = $uetsDir
+                $shortcut.Description = "PTT Ulusal Elektronik Tebligat Sistemi E-İmza Uygulaması"
+                $shortcut.Save()
+            } catch {}
+        }
+
+        Write-Success "PTT UETS E-İmza İstemcisi kuruldu ve Başlat Menüsüne eklendi."
+    } catch {
+        Write-Warn "PTT UETS istemcisi kurulurken uyarı alındı: $_"
+    }
+}
+
+# 8. Install CLI Tools & Add to PATH
 function Setup-CliTools {
     $installDir = "$env:ProgramData\legal-workstation\bin"
     if (-not (Test-Path $installDir)) {
@@ -287,6 +362,8 @@ function Main {
     Install-AkisDriver
     Install-UyapEditor
     Install-AdaletEimza
+    Install-Palma
+    Install-Uets
     Setup-CliTools
 
     Write-Step "Kurulum Tamamlandı! Teşhis ve Doğrulama Yapılıyor..."
@@ -300,3 +377,4 @@ function Main {
 }
 
 Main
+

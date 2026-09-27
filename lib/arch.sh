@@ -236,8 +236,72 @@ EOF
     log_success "Adalet E-İmza kullanıcı servisi etkinleştirildi ve başlatıldı."
 }
 
+arch_install_akia() {
+    log_step "TÜBİTAK AKİS / AKİA (libakisp11.so) akıllı kart aracı kuruluyor..."
+
+    if has_cmd akia || [[ -f /usr/local/bin/akia || -f /opt/Akia/Akia || -f /opt/Akia/akia || -f "$HOME/.local/bin/akia" ]]; then
+        log_info "AKİA uygulaması sistemde mevcut."
+    else
+        local aur_helper=""
+        if has_cmd yay; then
+            aur_helper="yay"
+        elif has_cmd paru; then
+            aur_helper="paru"
+        fi
+
+        if [[ -n "$aur_helper" ]]; then
+            log_info "AUR yardımcısı ($aur_helper) üzerinden akia kuruluyor..."
+            "$aur_helper" -S --needed --noconfirm akia 2>/dev/null || true
+        fi
+
+        if ! has_cmd akia && [[ ! -f /opt/Akia/Akia && ! -f /opt/Akia/akia ]]; then
+            log_info "Resmi TÜBİTAK paketinden AKİS / AKİA doğrudan kuruluyor..."
+            local akia_zip_url="https://akiskart.bilgem.tubitak.gov.tr/wp-content/uploads/sites/33/2026/06/Akia_linux_6_8_10.deb_.zip"
+            local tmp_dir
+            tmp_dir=$(mktemp -d /tmp/akia-arch-XXXXXX)
+
+            if curl -sSL -L --connect-timeout 8 --max-time 180 "$akia_zip_url" -o "$tmp_dir/akia.zip"; then
+                cd "$tmp_dir"
+                unzip -q akia.zip
+                local deb_file
+                deb_file=$(find . -name "*.deb" | head -n 1)
+                if [[ -n "$deb_file" && -f "$deb_file" ]]; then
+                    require_sudo
+                    ar x "$deb_file"
+                    mkdir -p extract
+                    tar -xf data.tar.* -C extract
+                    if [[ -d extract/opt/Akia ]]; then
+                        sudo cp -r extract/opt/Akia /opt/
+                        if [[ -f extract/opt/Akia/Akia ]]; then
+                            sudo ln -sf /opt/Akia/Akia /usr/local/bin/akia 2>/dev/null || true
+                        else
+                            sudo ln -sf /opt/Akia/akia /usr/local/bin/akia 2>/dev/null || true
+                        fi
+                        sudo ln -sf /opt/Akia/libakisp11.so /usr/lib/libakisp11.so 2>/dev/null || true
+                    fi
+                fi
+                cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
+            else
+                rm -rf "$tmp_dir"
+            fi
+        fi
+    fi
+
+    # Symlink to user local lib if present
+    mkdir -p "$HOME/.local/lib"
+    if [[ -f /usr/lib/libakisp11.so ]]; then
+        ln -sf /usr/lib/libakisp11.so "$HOME/.local/lib/libakisp11.so" 2>/dev/null || true
+    elif [[ -f /opt/Akia/libakisp11.so ]]; then
+        ln -sf /opt/Akia/libakisp11.so "$HOME/.local/lib/libakisp11.so" 2>/dev/null || true
+    fi
+}
+
 arch_install_all() {
     arch_install_system_packages
+    arch_install_akia
     arch_install_uyap_editor
     arch_install_adalet_eimza
+    common_install_uets
+    common_ensure_akia_desktop
 }
+

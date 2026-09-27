@@ -163,8 +163,73 @@ macos_install_adalet_eimza() {
     fi
 }
 
+macos_install_uets() {
+    log_step "4/4: PTT UETS (Ulusal Elektronik Tebligat Sistemi) E-İmza İstemcisi kuruluyor..."
+
+    local uets_url="https://api.etebligat.gov.tr/v1/auth/_eimza/uets-eimza.jar"
+    local uets_dir="/opt/uets"
+    local jar_path="$uets_dir/uets-eimza.jar"
+    local app_path="/Applications/PTT UETS E-İmza.app"
+    local launcher_path="/usr/local/bin/uets-eimza"
+
+    require_sudo
+    sudo mkdir -p "$uets_dir" /usr/local/bin
+
+    log_info "Resmi PTT UETS sunucusundan uets-eimza.jar indiriliyor..."
+    local tmp_jar
+    tmp_jar=$(mktemp /tmp/uets-jar-XXXXXX.jar)
+
+    if curl -sSL -L --connect-timeout 8 --max-time 120 "$uets_url" -o "$tmp_jar"; then
+        sudo cp "$tmp_jar" "$jar_path"
+        sudo chmod 644 "$jar_path"
+        rm -f "$tmp_jar"
+
+        # Create CLI launcher
+        sudo tee "$launcher_path" > /dev/null << 'EOF'
+#!/usr/bin/env bash
+# PTT UETS E-İmza macOS Launcher
+exec java -jar /opt/uets/uets-eimza.jar "$@"
+EOF
+        sudo chmod +x "$launcher_path"
+
+        # Create macOS Application Bundle for Spotlight and Launchpad
+        sudo mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
+        sudo tee "$app_path/Contents/MacOS/uets-eimza" > /dev/null << 'EOF'
+#!/bin/bash
+exec java -jar /opt/uets/uets-eimza.jar
+EOF
+        sudo chmod +x "$app_path/Contents/MacOS/uets-eimza"
+
+        sudo tee "$app_path/Contents/Info.plist" > /dev/null << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>uets-eimza</string>
+    <key>CFBundleIdentifier</key>
+    <string>tr.gov.ptt.uets.eimza</string>
+    <key>CFBundleName</key>
+    <string>PTT UETS E-İmza</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+</dict>
+</plist>
+EOF
+        sudo xattr -cr "$app_path" 2>/dev/null || true
+        log_success "PTT UETS E-İmza /Applications/PTT UETS E-İmza.app konumuna kuruldu."
+    else
+        rm -f "$tmp_jar"
+        log_warn "PTT UETS istemcisi indirilemedi."
+    fi
+}
+
 macos_install_all() {
     macos_install_akia
     macos_install_uyap_editor
     macos_install_adalet_eimza
+    macos_install_uets
 }
+

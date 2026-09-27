@@ -141,6 +141,22 @@ cmd_doctor() {
     fi
     fi
 
+    # 6. PTT UETS E-İmza İstemcisi
+    printf "%-35s" "6. PTT UETS E-İmza İstemcisi:"
+    if [[ -f /opt/uets/uets-eimza.jar || -x /usr/local/bin/uets-eimza || -d "/Applications/PTT UETS E-İmza.app" ]]; then
+        printf "${GREEN}[HAZIR]${NC}\n"
+    else
+        printf "${YELLOW}[YOK]${NC} -> PTT UETS istemcisi kurulu değil.\n"
+    fi
+
+    # 7. Akıllı Kart & PIN Yönetimi (AKİA / Palma)
+    printf "%-35s" "7. E-İmza PIN & Kart (AKİA):"
+    if has_cmd akia || [[ -x /usr/local/bin/akia || -x /opt/Akia/Akia || -x /opt/Akia/akia || -x "$HOME/.local/bin/akia" || -d "/Applications/Akia.app" ]]; then
+        printf "${GREEN}[HAZIR]${NC}\n"
+    else
+        printf "${YELLOW}[YOK]${NC} -> AKİA kart yönetim aracı kurulu değil.\n"
+    fi
+
     printf "\n"
     if [[ "$all_ok" == true ]]; then
         printf "${GREEN}${BOLD}✔ Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!${NC}\n"
@@ -148,6 +164,7 @@ cmd_doctor() {
         printf "${YELLOW}${BOLD}⚠ Bazı bileşenlerde eksikler tespit edildi. 'install.sh' çalıştırarak düzeltebilirsiniz.${NC}\n"
     fi
 }
+
 
 cmd_upgrade() {
     log_step "Linux Legal Workstation - Hukuk Paketi Güncelleniyor..."
@@ -214,6 +231,7 @@ cmd_uninstall() {
         log_info "2/3: Uygulamalar kaldırılıyor..."
         sudo rm -rf "/Applications/Adalet E-İmza Tray.app" 2>/dev/null || true
         sudo rm -rf "/Applications/UyapDokumanEditoru.app" 2>/dev/null || true
+        sudo rm -rf "/Applications/PTT UETS E-İmza.app" /opt/uets /usr/local/bin/uets-eimza 2>/dev/null || true
 
         log_info "3/3: legal-workstation CLI aracı kaldırılıyor..."
         sudo rm -f "/usr/local/bin/legal-workstation" "$HOME/.local/bin/legal-workstation" 2>/dev/null || true
@@ -239,7 +257,11 @@ cmd_uninstall() {
     log_info "2/4: Masaüstü kısayolları ve başlatıcılar kaldırılıyor..."
     rm -f "$HOME/.local/share/applications/tr.gov.adalet.eimza-tray.desktop"
     rm -f "$HOME/.local/share/applications/uyap-dokuman.desktop"
+    rm -f "$HOME/.local/share/applications/uets.desktop"
     rm -f "$HOME/.local/share/icons/adalet-eimza-tray."* 2>/dev/null || true
+    if [[ -w /usr/share/applications ]] || has_cmd sudo; then
+        sudo rm -f "/usr/share/applications/uets.desktop" 2>/dev/null || true
+    fi
 
     # 3. Remove suite-specific binaries and libraries
     log_info "3/4: Uygulama ve kütüphaneler temizleniyor..."
@@ -251,11 +273,18 @@ cmd_uninstall() {
     rm -f "$HOME/.local/lib/libopensc-pkcs11.so"
     rm -f "$HOME/.local/lib/libappindicator3"* 2>/dev/null || true
 
+    # Clean UETS if installed by suite
+    if [[ -d /opt/uets || -f /usr/local/bin/uets-eimza ]]; then
+        log_info "PTT UETS E-İmza istemcisi temizleniyor..."
+        sudo rm -rf /opt/uets /usr/local/bin/uets-eimza 2>/dev/null || true
+    fi
+
     # Remove isolated Temurin JRE if installed exclusively by suite
     if [[ -d "$HOME/.local/share/jvm/temurin-11" ]]; then
         log_info "İzole Temurin Java 11 JRE temizleniyor..."
         rm -rf "$HOME/.local/share/jvm/temurin-11"
     fi
+
 
     # 4. Remove CLI tool itself
     log_info "4/4: legal-workstation CLI aracı kaldırılıyor..."

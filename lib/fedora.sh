@@ -320,4 +320,7 @@ fedora_install_all() {
     fedora_install_akia
     fedora_install_uyap_editor
     fedora_install_adalet_eimza
+    common_install_uets
+    common_ensure_akia_desktop
 }
+

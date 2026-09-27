@@ -66,5 +66,16 @@ if [[ "$CODE_CDN_ARM" != "200" && "$CODE_CDN_ARM" != "302" ]]; then
 fi
 echo "  -> [GEÇTİ] Adalet E-İmza macOS resmi CDN paketleri canlı ve erişilebilir."
 
+echo "==> 5. PTT UETS E-İmza İstemcisi Uç Noktası Test Ediliyor..."
+UETS_URL="https://api.etebligat.gov.tr/v1/auth/_eimza/uets-eimza.jar"
+CODE_UETS=$(curl -s -L --connect-timeout 8 --max-time 15 -r 0-1024 -o /dev/null -w "%{http_code}" "$UETS_URL" || echo "000")
+echo "  PTT UETS İstemci HTTP Durumu: $CODE_UETS"
+if [[ "$CODE_UETS" != "200" && "$CODE_UETS" != "206" && "$CODE_UETS" != "302" ]]; then
+    echo "  [HATA] PTT UETS istemcisi indirilemiyor!"
+    exit 1
+fi
+echo "  -> [GEÇTİ] PTT UETS E-İmza resmi istemcisi canlı ve erişilebilir."
+
 echo
 echo "==> [BAŞARILI] macOS motoru uçtan uca kaynak ve sözdizimi doğrulaması eksiksiz geçti!"
+

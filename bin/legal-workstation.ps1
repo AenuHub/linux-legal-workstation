@@ -202,6 +202,34 @@ function Invoke-Doctor {
         $allOk = $false
     }
 
+    # 7. PTT UETS E-İmza
+    Write-Host ("{0,-$colWidth}" -f "7. PTT UETS E-İmza:") -NoNewline
+    $uetsJar = "$env:ProgramFiles\PTT\UETS\uets-eimza.jar"
+    if (Test-Path $uetsJar) {
+        Write-Host "[HAZIR]" -ForegroundColor Green
+    } else {
+        Write-Host "[KURULU DEĞİL]" -ForegroundColor Yellow
+    }
+
+    # 8. TÜRKTRUST PALMA (PIN & Blokaj)
+    Write-Host ("{0,-$colWidth}" -f "8. TÜRKTRUST PALMA (PIN/Blokaj):") -NoNewline
+    $palmaPaths = @(
+        "$env:ProgramFiles\TURKTRUST\Palma\PALMA.exe",
+        "${env:ProgramFiles(x86)}\TURKTRUST\Palma\PALMA.exe"
+    )
+    $palmaFound = $false
+    foreach ($p in $palmaPaths) {
+        if (Test-Path $p) {
+            $palmaFound = $true
+            break
+        }
+    }
+    if ($palmaFound) {
+        Write-Host "[HAZIR]" -ForegroundColor Green
+    } else {
+        Write-Host "[KURULU DEĞİL]" -ForegroundColor Yellow
+    }
+
     Write-Host ""
     if ($allOk) {
         Write-Host "✔ Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!`n" -ForegroundColor Green
@@ -209,6 +237,7 @@ function Invoke-Doctor {
         Write-Host "⚠ Bazı bileşenlerde eksikler tespit edildi. 'install.ps1' çalıştırarak düzeltebilirsiniz.`n" -ForegroundColor Yellow
     }
 }
+
 
 function Invoke-Upgrade {
     Write-Step "Legal Workstation (Windows) - Hukuk Paketi Güncelleniyor..."
@@ -284,12 +313,21 @@ function Invoke-Uninstall {
         }
     }
 
-    # 3. Remove CLI tools & PATH
+    # 3. Remove UETS files and shortcuts if installed by suite
+    $uetsDir = "$env:ProgramFiles\PTT\UETS"
+    if (Test-Path $uetsDir) {
+        Write-Info "PTT UETS E-İmza istemcisi temizleniyor..."
+        Remove-Item $uetsDir -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\PTT UETS E-İmza.lnk" -Force -ErrorAction SilentlyContinue
+    }
+
+    # 4. Remove CLI tools & PATH
     Write-Info "3/3: CLI araçları ve ortam değişkenleri temizleniyor..."
     $installDir = "$env:ProgramData\legal-workstation"
     if (Test-Path $installDir) {
         Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue
     }
+
 
     # Clean machine PATH
     $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
