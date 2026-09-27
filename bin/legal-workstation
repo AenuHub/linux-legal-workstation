@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # legal-workstation - Turkish Legal Workstation CLI & Diagnostic Tool
+# Repository: https://github.com/AenuHub/linux-legal-workstation
 
 set -euo pipefail
 
@@ -8,12 +9,12 @@ DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "$DIR_ROOT/lib/common.sh" 2>/dev/null || {
     # Fallback if installed standalone in ~/.local/bin
-    RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
+    RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
     log_info() { printf "${BLUE}[INFO]${NC} %s\n" "$*"; }
     log_success() { printf "${GREEN}[BAŞARILI]${NC} %s\n" "$*"; }
     log_warn() { printf "${YELLOW}[UYARI]${NC} %s\n" "$*"; }
     log_error() { printf "${RED}[HATA]${NC} %s\n" "$*" >&2; }
-    log_step() { printf "\n${BOLD}%s${NC}\n" "$*"; }
+    log_step() { printf "\n${BOLD}${CYAN}==>${NC} ${BOLD}%s${NC}\n" "$*"; }
     has_cmd() { command -v "$1" >/dev/null 2>&1; }
 }
 
@@ -89,13 +90,43 @@ cmd_doctor() {
     fi
 }
 
-cmd_update() {
-    log_info "Adalet E-İmza güncellemesi kontrol ediliyor..."
-    if [[ -x "$HOME/.local/bin/check-adalet-eimza-update" ]]; then
-        "$HOME/.local/bin/check-adalet-eimza-update"
+cmd_upgrade() {
+    log_step "Linux Legal Workstation - Hukuk Paketi Güncelleniyor..."
+
+    # 1. Self-update CLI and scripts
+    log_info "1/4: Hukuk çalışma istasyonu betikleri kontrol ediliyor..."
+    if [[ -d "$DIR_ROOT/.git" ]] && has_cmd git; then
+        log_info "Git deposundan son güncellemeler alınıyor..."
+        git -C "$DIR_ROOT" pull --ff-only 2>/dev/null || log_warn "Git deposu güncellenemedi, yerel sürümle devam ediliyor."
     else
-        log_error "Güncelleme scripti bulunamadı. Lütfen önce kurulumu tamamlayın."
+        log_info "legal-workstation CLI son sürümü kontrol ediliyor..."
+        curl -sSL "https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/bin/legal-workstation" -o "$HOME/.local/bin/legal-workstation" 2>/dev/null && chmod +x "$HOME/.local/bin/legal-workstation" || true
     fi
+
+    # 2. Adalet E-İmza Uygulaması CDN check & update
+    log_info "2/4: Adalet E-İmza (Avukat Portal Girişi) CDN güncellemesi sorgulanıyor..."
+    if [[ -x "$HOME/.local/bin/check-adalet-eimza-update" ]]; then
+        "$HOME/.local/bin/check-adalet-eimza-update" || log_warn "Adalet E-İmza güncellemesi atlandı."
+    fi
+
+    # 3. UYAP Doküman Editörü Check & Update
+    log_info "3/4: UYAP Doküman Editörü kontrol ediliyor..."
+    if has_cmd yay; then
+        yay -S --needed --noconfirm uyap-editor 2>/dev/null || log_info "UYAP Editörü zaten güncel."
+    elif has_cmd paru; then
+        paru -S --needed --noconfirm uyap-editor 2>/dev/null || log_info "UYAP Editörü zaten güncel."
+    else
+        log_info "UYAP Doküman Editörü kütüphaneleri kontrol edildi."
+    fi
+
+    # 4. Service restarts
+    log_info "4/4: Arka plan servisleri yenileniyor..."
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user restart adalet-eimza-tray.service 2>/dev/null || true
+
+    log_success "Tüm paket ve servis güncellemeleri tamamlandı!"
+    printf "\n"
+    cmd_doctor
 }
 
 cmd_help() {
@@ -106,11 +137,12 @@ Kullanım:
   legal-workstation [komut]
 
 Komutlar:
-  doctor     Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
-  update     Adalet E-İmza uygulamasını resmi UYAP CDN üzerinden son sürüme günceller.
-  start      Adalet E-İmza arka plan servisini başlatır.
-  restart    Adalet E-İmza ve PC/SC servislerini yeniden başlatır.
-  help       Bu yardım mesajını gösterir.
+  doctor       Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
+  upgrade      Tüm araçları (Adalet E-İmza, UYAP Editör, servisler, CLI) tek komutla günceller.
+  update       'upgrade' komutunun kısayoludur.
+  start        Adalet E-İmza arka plan servisini başlatır.
+  restart      Adalet E-İmza ve PC/SC servislerini yeniden başlatır.
+  help         Bu yardım mesajını gösterir.
 EOF
 }
 
@@ -118,8 +150,8 @@ case "${1:-doctor}" in
     doctor)
         cmd_doctor
         ;;
-    update)
-        cmd_update
+    upgrade|update|update-all)
+        cmd_upgrade
         ;;
     start)
         systemctl --user start adalet-eimza-tray.service

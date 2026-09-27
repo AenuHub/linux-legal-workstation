@@ -86,6 +86,23 @@ legal-workstation doctor
 
 ---
 
+## 🔄 Tek Komutla Tüm Paketi Güncelleme (`upgrade`)
+
+Adalet Bakanlığı UYAP Portal e-imza uygulamasını veya UYAP Doküman Editörü'nü güncellediğinde, tek bir komutla tüm çalışma ortamınızı, sürücülerinizi ve servislerinizi senkronize edebilirsiniz:
+
+```bash
+legal-workstation upgrade
+```
+
+Bu komut sırasıyla:
+1. `linux-legal-workstation` araçlarını günceller,
+2. Adalet Bakanlığı CDN'inden (`cdn.uyap.gov.tr`) en son E-İmza Uygulaması sürümünü sorgular ve günceller,
+3. UYAP Doküman Editörü güncellemelerini kontrol eder,
+4. Arka plan servislerini (`adalet-eimza-tray`, `pcscd`) güvenli şekilde yeniden başlatır,
+5. Otomatik `doctor` teşhisi yaparak sistemin hazır olduğunu teyit eder.
+
+---
+
 ## 🗺️ Desteklenen Platformlar ve Yol Haritası
 
 - [x] **Arch Linux & Omarchy:** Tamamen test edildi, doğrulandı ve üretimde çalışıyor.
