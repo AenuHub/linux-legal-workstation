@@ -12,3 +12,4 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - CLI diagnosis tool `legal-workstation doctor` to inspect readers, token presence, and service health.
 - Comprehensive Turkish `README.md` with visual badges and lawyer-friendly instructions.
 - Unified suite upgrade command (`legal-workstation upgrade` / `update`) to update CLI, Adalet E-İmza CDN package, UYAP Editor, and restart background services with doctor verification.
+- Full Debian, Ubuntu and Linux Mint installation engine (`lib/debian.sh`) supporting apt-get packaging, official UYAP Editor deb installation, and systemd user services.

@@ -106,8 +106,8 @@ Bu komut sırasıyla:
 ## 🗺️ Desteklenen Platformlar ve Yol Haritası
 
 - [x] **Arch Linux & Omarchy:** Tamamen test edildi, doğrulandı ve üretimde çalışıyor.
-- [ ] **Ubuntu / Debian / Linux Mint:** Geliştirme aşamasında (Phase 1).
-- [ ] **Fedora / Red Hat:** Planlama aşamasında.
+- [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi (`lib/debian.sh`).
+- [ ] **Fedora / Red Hat:** Planlama aşamasında (`lib/fedora.sh`).
 - [ ] **macOS:** Tek komutla e-imza ve UYAP kurulum motoru (İleri Aşama).
 - [ ] **Windows:** Tek tık / tek komutla izole avukat çalışma ortamı (İleri Aşama).
 
