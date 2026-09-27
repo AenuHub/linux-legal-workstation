@@ -21,6 +21,8 @@ debian_install_system_packages() {
         unzip
         tar
         binutils
+        python3
+        xz-utils
     )
 
     log_info "Apt paket listesi güncelleniyor..."
@@ -34,22 +36,64 @@ debian_install_system_packages() {
     fi
 
     log_info "Gerekli paketler kuruluyor: ${pkgs[*]}"
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${pkgs[@]}"
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get install -y -qq "${pkgs[@]}"
 
     log_step "2/4: PC/SC Akıllı Kart servisi etkinleştiriliyor..."
-    sudo systemctl enable --now pcscd.socket pcscd.service 2>/dev/null || sudo service pcscd start
-    log_success "PC/SC Daemon (pcscd) aktif ve çalışıyor."
+    if has_cmd systemctl; then
+        sudo systemctl enable --now pcscd.socket pcscd.service 2>/dev/null || true
+    fi
+    if ! (systemctl is-active --quiet pcscd.socket 2>/dev/null) && has_cmd service; then
+        sudo service pcscd start 2>/dev/null || true
+    fi
+    log_success "PC/SC Daemon (pcscd) yapılandırıldı."
+}
+
+debian_install_akia() {
+    log_step "TÜBİTAK AKİS / AKİA (libakisp11.so) akıllı kart sürücüsü kuruluyor..."
+    
+    if [[ -f /usr/lib/libakisp11.so || -f /opt/Akia/libakisp11.so ]]; then
+        log_info "TÜBİTAK AKİS kütüphanesi sistemde mevcut."
+    else
+        local akia_zip_url="https://akiskart.bilgem.tubitak.gov.tr/wp-content/uploads/sites/33/2026/06/Akia_linux_6_8_10.deb_.zip"
+        local tmp_dir
+        tmp_dir=$(mktemp -d /tmp/akia-debian-XXXXXX)
+
+        log_info "Resmi TÜBİTAK sunucusundan AKİS / AKİA sürücüsü indiriliyor..."
+        if curl -sSL -L --connect-timeout 8 --max-time 180 "$akia_zip_url" -o "$tmp_dir/akia.zip"; then
+            cd "$tmp_dir"
+            unzip -q akia.zip
+            local deb_file
+            deb_file=$(find . -name "*.deb" | head -n 1)
+            if [[ -n "$deb_file" && -f "$deb_file" ]]; then
+                require_sudo
+                sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq) || true
+                log_success "TÜBİTAK AKİS (libakisp11.so) ve AKİA başarıyla kuruldu."
+            fi
+            cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
+        else
+            log_warn "TÜBİTAK AKİS sürücüsü indirilemedi, OpenSC sürücüleri kullanılacak."
+            cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
+        fi
+    fi
+
+    # Symlink to user local lib if present
+    mkdir -p "$HOME/.local/lib"
+    if [[ -f /usr/lib/libakisp11.so ]]; then
+        ln -sf /usr/lib/libakisp11.so "$HOME/.local/lib/libakisp11.so" 2>/dev/null || true
+    elif [[ -f /opt/Akia/libakisp11.so ]]; then
+        ln -sf /opt/Akia/libakisp11.so "$HOME/.local/lib/libakisp11.so" 2>/dev/null || true
+    fi
 }
 
 debian_install_uyap_editor() {
-    log_step "3/4: UYAP Doküman Editörü (.deb) kuruluyor..."
+    log_step "3/5: UYAP Doküman Editörü (.deb) kuruluyor..."
 
     if has_cmd uyap-dokuman || [[ -f /usr/bin/uyap-dokuman || -f "$HOME/.local/bin/uyap-dokuman" ]]; then
         log_info "UYAP Doküman Editörü sistemde mevcut, başlatıcı kontrol ediliyor..."
     else
         local tmp_dir
         tmp_dir=$(mktemp -d /tmp/uyap-debian-XXXXXX)
-        trap 'rm -rf "$tmp_dir"' RETURN
 
         log_info "Resmi UYAP sunucusundan son sürüm indiriliyor..."
         local zip_url="https://rayp.adalet.gov.tr/resimler/2/dosya/uyapeditor_5.4.20_amd64.zip"
@@ -58,12 +102,12 @@ debian_install_uyap_editor() {
             cd "$tmp_dir"
             unzip -q uyap.zip
             local deb_file
-            deb_file=$(find . -name "*.deb" | head -n 1)
+            deb_file=$(find . -name "*uyapeditor*.deb" -o -name "*uyap*.deb" | head -n 1)
 
             if [[ -n "$deb_file" && -f "$deb_file" ]]; then
                 log_info "Debian paketi kuruluyor ($deb_file)..."
                 require_sudo
-                sudo dpkg -i "$deb_file" 2>/dev/null || sudo apt-get install -f -y -qq
+                sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq) || true
                 log_success "UYAP Doküman Editörü başarıyla kuruldu."
             else
                 log_warn "Zip arşivinde .deb paketi bulunamadı."
@@ -71,6 +115,7 @@ debian_install_uyap_editor() {
         else
             log_warn "UYAP Editör zip arşivi indirilemedi. Lütfen internet bağlantınızı kontrol edin."
         fi
+        cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
     fi
 
     # Set up user-level wrapper for Java 11 guarantee
@@ -78,7 +123,7 @@ debian_install_uyap_editor() {
     cat << 'EOF' > "$HOME/.local/bin/uyap-dokuman"
 #!/bin/bash
 # UYAP Editor wrapper for Linux Legal Workstation (Debian/Ubuntu)
-export LD_LIBRARY_PATH="$HOME/.local/lib:/usr/lib/x86_64-linux-gnu/pkcs11:/usr/lib/pkcs11:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$HOME/.local/lib:/opt/Akia:/usr/lib:/usr/lib/x86_64-linux-gnu/pkcs11:/usr/lib/pkcs11:${LD_LIBRARY_PATH}"
 
 # Find Java 11 or 8 runtime
 for jcandidate in \
@@ -162,7 +207,7 @@ debian_install_adalet_eimza() {
             mkdir -p "$HOME/.local/share/icons"
             cp -r extract/usr/share/icons/* "$HOME/.local/share/icons/" 2>/dev/null || true
         fi
-        rm -rf "$tmp_dir"
+        cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
         log_success "Adalet E-İmza Uygulaması v$latest_version kuruldu."
     else
         log_warn "CDN üzerinden otomatik indirme yapılamadı."
@@ -261,6 +306,7 @@ EOF
 
 debian_install_all() {
     debian_install_system_packages
+    debian_install_akia
     debian_install_uyap_editor
     debian_install_adalet_eimza
 }

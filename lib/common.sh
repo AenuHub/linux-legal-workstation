@@ -12,23 +12,23 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 log_info() {
-    printf "${BLUE}[INFO]${NC} %s\n" "$*"
+    printf "${BLUE}[INFO]${NC} %b\n" "$*"
 }
 
 log_success() {
-    printf "${GREEN}[BAŞARILI]${NC} %s\n" "$*"
+    printf "${GREEN}[BAŞARILI]${NC} %b\n" "$*"
 }
 
 log_warn() {
-    printf "${YELLOW}[UYARI]${NC} %s\n" "$*"
+    printf "${YELLOW}[UYARI]${NC} %b\n" "$*"
 }
 
 log_error() {
-    printf "${RED}[HATA]${NC} %s\n" "$*" >&2
+    printf "${RED}[HATA]${NC} %b\n" "$*" >&2
 }
 
 log_step() {
-    printf "\n${BOLD}${CYAN}==>${NC} ${BOLD}%s${NC}\n" "$*"
+    printf "\n${BOLD}${CYAN}==>${NC} ${BOLD}%b${NC}\n" "$*"
 }
 
 # Check if command exists
@@ -74,7 +74,7 @@ detect_os() {
     esac
 }
 
-# Require sudo privileges
+# Require sudo privileges (or transparent execution if root)
 require_sudo() {
     if [[ $EUID -eq 0 ]]; then
         return 0
@@ -92,3 +92,10 @@ require_sudo() {
         exit 1
     fi
 }
+
+# Provide transparent sudo fallback for container/root runs
+if [[ $EUID -eq 0 ]] && ! has_cmd sudo; then
+    sudo() {
+        "$@"
+    }
+fi

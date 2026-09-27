@@ -41,8 +41,8 @@ cmd_doctor() {
         readers=$(opensc-tool --list-readers 2>/dev/null || true)
         if [[ -n "$readers" ]] && ! echo "$readers" | grep -qi "No smart card readers found"; then
             local card_name
-            card_name=$(echo "$readers" | head -n 1 | sed 's/^[0-9]: //')
-            printf "${GREEN}[ALGILANDI]${NC} (%s)\n" "$card_name"
+            card_name=$(echo "$readers" | grep -E '^[0-9]' | head -n 1 | awk '{$1=$2=""; print $0}' | sed 's/^[ \t]*//')
+            printf "${GREEN}[ALGILANDI]${NC} (%s)\n" "${card_name:-Kart Okuyucu}"
         else
             printf "${YELLOW}[KART OKUYUCU TAKILI DEĞİL]${NC} (Lütfen e-imza USB token'ınızı takın)\n"
         fi

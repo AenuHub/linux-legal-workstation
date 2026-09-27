@@ -13,3 +13,6 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Comprehensive Turkish `README.md` with visual badges and lawyer-friendly instructions.
 - Unified suite upgrade command (`legal-workstation upgrade` / `update`) to update CLI, Adalet E-İmza CDN package, UYAP Editor, and restart background services with doctor verification.
 - Full Debian, Ubuntu and Linux Mint installation engine (`lib/debian.sh`) supporting apt-get packaging, official UYAP Editor deb installation, and systemd user services.
+- Automated container integration test (`tests/test-ubuntu-container.sh`) validating clean-room installation on Ubuntu 22.04 LTS.
+- End-to-end physical hardware verification on Omarchy Linux: successfully tested token reader (ACS ACR39U), TÜBİTAK UEKAE AKİS v2.2 card, PIN authentication, and generated signed UDF document containing cryptographic `sign.sgn`.
+- Integrated official TÜBİTAK AKİS (`Akia_linux_6_8_10.deb` supplying `libakisp11.so` and AKİA) into Debian/Ubuntu engine, ensuring 100% driver parity for TÜBİTAK UEKAE AKİS v2.2 chipsets on Ubuntu, Debian, and Linux Mint.
