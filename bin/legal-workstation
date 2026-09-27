@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+# legal-workstation - Turkish Legal Workstation CLI & Diagnostic Tool
+
+set -euo pipefail
+
+# Find script directory
+DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck disable=SC1091
+source "$DIR_ROOT/lib/common.sh" 2>/dev/null || {
+    # Fallback if installed standalone in ~/.local/bin
+    RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
+    log_info() { printf "${BLUE}[INFO]${NC} %s\n" "$*"; }
+    log_success() { printf "${GREEN}[BAŞARILI]${NC} %s\n" "$*"; }
+    log_warn() { printf "${YELLOW}[UYARI]${NC} %s\n" "$*"; }
+    log_error() { printf "${RED}[HATA]${NC} %s\n" "$*" >&2; }
+    log_step() { printf "\n${BOLD}%s${NC}\n" "$*"; }
+    has_cmd() { command -v "$1" >/dev/null 2>&1; }
+}
+
+cmd_doctor() {
+    printf "${BOLD}=====================================================${NC}\n"
+    printf "${BOLD}  Linux Legal Workstation - Teşhis ve Sağlık Kontrolü${NC}\n"
+    printf "${BOLD}=====================================================${NC}\n\n"
+
+    local all_ok=true
+
+    # 1. PCSC Daemon
+    printf "%-35s" "1. Akıllı Kart Servisi (pcscd):"
+    if systemctl is-active --quiet pcscd.socket 2>/dev/null || systemctl is-active --quiet pcscd 2>/dev/null; then
+        printf "${GREEN}[ÇALIŞIYOR]${NC}\n"
+    else
+        printf "${RED}[DURDURULMUŞ]${NC} -> 'sudo systemctl start pcscd'\n"
+        all_ok=false
+    fi
+
+    # 2. Card Reader & Token check
+    printf "%-35s" "2. Kart Okuyucu / USB Token:"
+    if has_cmd opensc-tool; then
+        local readers
+        readers=$(opensc-tool --list-readers 2>/dev/null || true)
+        if [[ -n "$readers" ]] && ! echo "$readers" | grep -qi "No smart card readers found"; then
+            local card_name
+            card_name=$(echo "$readers" | head -n 1 | sed 's/^[0-9]: //')
+            printf "${GREEN}[ALGILANDI]${NC} (%s)\n" "$card_name"
+        else
+            printf "${YELLOW}[KART OKUYUCU TAKILI DEĞİL]${NC} (Lütfen e-imza USB token'ınızı takın)\n"
+        fi
+    else
+        printf "${YELLOW}[opensc-tool bulunamadı]${NC}\n"
+    fi
+
+    # 3. Adalet E-İmza Tray Service
+    printf "%-35s" "3. Adalet E-İmza Servisi:"
+    if systemctl --user is-active --quiet adalet-eimza-tray.service 2>/dev/null; then
+        printf "${GREEN}[ÇALIŞIYOR]${NC}\n"
+    else
+        printf "${YELLOW}[KAPALI]${NC} -> 'systemctl --user start adalet-eimza-tray'\n"
+    fi
+
+    # 4. Java Runtime for UYAP
+    printf "%-35s" "4. UYAP Uyumlu Java (8/11):"
+    local java_found=false
+    for jpath in /usr/lib/jvm/java-11-*/bin/java /usr/lib/jvm/java-8-*/bin/java /usr/lib/jvm/java-11-*/jre/bin/java; do
+        if [[ -x "$jpath" ]]; then
+            java_found=true
+            printf "${GREEN}[MEVCUT]${NC} (%s)\n" "$("$jpath" -version 2>&1 | head -n 1)"
+            break
+        fi
+    done
+    if [[ "$java_found" != true ]]; then
+        printf "${RED}[BULUNAMADI]${NC} -> UYAP Editör için Java 11 JRE gereklidir.\n"
+        all_ok=false
+    fi
+
+    # 5. UYAP Editor launcher
+    printf "%-35s" "5. UYAP Doküman Editörü:"
+    if has_cmd uyap-dokuman || [[ -x "$HOME/.local/bin/uyap-dokuman" ]]; then
+        printf "${GREEN}[HAZIR]${NC}\n"
+    else
+        printf "${RED}[YOK]${NC} -> UYAP Editörü kurulu değil.\n"
+        all_ok=false
+    fi
+
+    printf "\n"
+    if [[ "$all_ok" == true ]]; then
+        printf "${GREEN}${BOLD}✔ Sisteminiz UYAP ve E-İmza kullanımı için hazırdır!${NC}\n"
+    else
+        printf "${YELLOW}${BOLD}⚠ Bazı bileşenlerde eksikler tespit edildi. 'install.sh' çalıştırarak düzeltebilirsiniz.${NC}\n"
+    fi
+}
+
+cmd_update() {
+    log_info "Adalet E-İmza güncellemesi kontrol ediliyor..."
+    if [[ -x "$HOME/.local/bin/check-adalet-eimza-update" ]]; then
+        "$HOME/.local/bin/check-adalet-eimza-update"
+    else
+        log_error "Güncelleme scripti bulunamadı. Lütfen önce kurulumu tamamlayın."
+    fi
+}
+
+cmd_help() {
+    cat << EOF
+Linux Legal Workstation CLI
+
+Kullanım:
+  legal-workstation [komut]
+
+Komutlar:
+  doctor     Sistemdeki e-imza, kart okuyucu, servisler ve UYAP durumunu teşhis eder.
+  update     Adalet E-İmza uygulamasını resmi UYAP CDN üzerinden son sürüme günceller.
+  start      Adalet E-İmza arka plan servisini başlatır.
+  restart    Adalet E-İmza ve PC/SC servislerini yeniden başlatır.
+  help       Bu yardım mesajını gösterir.
+EOF
+}
+
+case "${1:-doctor}" in
+    doctor)
+        cmd_doctor
+        ;;
+    update)
+        cmd_update
+        ;;
+    start)
+        systemctl --user start adalet-eimza-tray.service
+        log_success "Adalet E-İmza servisi başlatıldı."
+        ;;
+    restart)
+        systemctl --user restart adalet-eimza-tray.service
+        log_success "Servis yeniden başlatıldı."
+        ;;
+    help|--help|-h)
+        cmd_help
+        ;;
+    *)
+        cmd_help
+        exit 1
+        ;;
+esac
