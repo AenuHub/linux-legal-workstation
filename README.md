@@ -5,9 +5,9 @@
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-Omarchy-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![Fedora](https://img.shields.io/badge/Fedora-51A2DA?logo=fedora&logoColor=white)](https://fedoraproject.org/)
-[![Windows](https://img.shields.io/badge/Windows_10%2F11-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+[![Windows](https://img.shields.io/badge/Windows_10%2F11-Geliştirme_(Beta)-yellow?logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![macOS](https://img.shields.io/badge/macOS-Deneysel_(Beta)-yellow?logo=apple&logoColor=white)](https://apple.com/macos)
-[![Status](https://img.shields.io/badge/Durum-Doğrulandı_(Linux_%26_Windows)-brightgreen)](#)
+[![Status](https://img.shields.io/badge/Durum-Linux_Doğrulandı_|_Win_&_Mac_Beta-brightgreen)](#)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-blue.svg)](LICENSE)
 [![Gizlilik](https://img.shields.io/badge/Gizlilik-No--Exfiltration_(Tamamen_Yerel)-purple)](#gizlilik-ve-güvenlik-ilkesi)
 
@@ -24,20 +24,30 @@ Avukatlık mesleğini icra ederken farklı işletim sistemlerinde e-imza sürüc
 ## 🚀 Hızlı Başlangıç (Tek Komutla Kurulum)
 
 ### 🐧 Linux (Arch / Omarchy, Ubuntu / Debian / Mint, Fedora / RHEL):
+> **Kararlı (Üretimde Doğrulandı):** Donanım düzeyinde ve temiz konteyner ortamlarında test edilmiş, tam ve öncelikli desteklenen ana kurulum ortamıdır.
+
 Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.sh | bash
 ```
 
-### 🪟 Windows (Windows 10 / 11):
-PowerShell uygulamasını açın (Yönetici olarak) ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
+---
+
+### ⚠️ Windows & macOS (Geliştirme ve Test Aşamasında - Beta)
+
+> [!WARNING]
+> **Windows ve macOS Desteği Henüz Geliştirme / Test Aşamasındadır:**
+> Linux dışındaki platformlarda sistem servisleri, kart sürücüleri ve çalışma ortamı henüz tüm bilgisayar konfigürasyonlarında tam kararlı çalışmayabilir. Geliştirme sürecini denemek ve katkı sağlamak isteyen kullanıcılar aşağıdaki tek tıkla kurulum komutlarını kullanabilir:
+
+#### 🪟 Windows (Windows 10 / 11) — *Deneysel / Beta*:
+PowerShell uygulamasını (**Yönetici olarak**) açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 
 ```powershell
 irm https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.ps1 | iex
 ```
 
-### 🍎 macOS (Apple Silicon M1-M4 & Intel):
+#### 🍎 macOS (Apple Silicon M1-M4 & Intel) — *Deneysel / Beta*:
 Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 
 ```bash
@@ -49,9 +59,9 @@ curl -fsSL https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/mai
 ```bash
 git clone https://github.com/AenuHub/linux-legal-workstation.git
 cd linux-legal-workstation
-./install.sh        # Linux için
-.\install.ps1       # Windows için (PowerShell)
-./install-macos.sh  # macOS için
+./install.sh        # Linux için (Kararlı)
+.\install.ps1       # Windows için (Beta / PowerShell)
+./install-macos.sh  # macOS için (Beta)
 ```
 
 ---
@@ -151,7 +161,7 @@ legal-workstation uninstall
 - [x] **Arch Linux & Omarchy:** Donanım düzeyinde fiziksel olarak (ACS ACR39U + AKİS v2.2) test edildi ve üretimde doğrulandı.
 - [x] **Ubuntu, Debian & Linux Mint (v20.04+, v22.04+, v24.04+):** Destek eklendi ve resmi TÜBİTAK AKİS sürücüsüyle konteynerde doğrulandı (`lib/debian.sh`).
 - [x] **Fedora, RHEL & Rocky Linux:** Destek eklendi, Temurin Java 11 ve AKİS RPM ile konteynerde doğrulandı (`lib/fedora.sh`).
-- [x] **Windows (10 / 11):** Tek komutla PowerShell kurulumu (`install.ps1`), SCardSvr servisi, Java 11, UETS ve PALMA entegrasyonu tamamlandı.
+- [ ] **Windows (10 / 11):** **Geliştirme / Test Aşamasında (Beta).** Tek komutla PowerShell kurulumu (`install.ps1`) eklendi; farklı donanım ve Windows konfigürasyonlarında servis kararlılığı için test süreci devam etmektedir.
 - [ ] **macOS (Apple Silicon & Intel):** **Deneysel (Beta) / Topluluk Testi.** Kurulum motoru ve resmi paket bağlantıları doğrulandı; henüz gerçek bir Mac cihazında uçtan uca fiziksel donanım testi yapılmadığı için topluluk geri bildirimine ve testlerine açıktır.
 
 ---

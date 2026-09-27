@@ -1,4 +1,4 @@
-# Legal Workstation - Avukatlar İçin Windows Kurulum Betiği
+﻿# Legal Workstation - Avukatlar İçin Windows Kurulum Betiği
 # Repository: https://github.com/AenuHub/linux-legal-workstation
 
 [CmdletBinding()]
@@ -53,7 +53,8 @@ function Print-Banner {
     }
     Write-Host "========================================================================" -ForegroundColor Cyan
     Write-Host "  Avukatlar İçin Tek Komutla Windows Hukuk Çalışma İstasyonu Kurulumu" -ForegroundColor White
-    Write-Host "========================================================================`n" -ForegroundColor Cyan
+    Write-Host "========================================================================" -ForegroundColor Cyan
+    Write-Host "[BİLGİ] Windows desteği henüz geliştirme ve test (Beta) aşamasındadır.`n" -ForegroundColor Yellow
 }
 
 # 0. Check Administrator Privileges

@@ -36,3 +36,4 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - Added `.gitattributes` to enforce CRLF line endings on Windows PowerShell scripts (`*.ps1`, `*.cmd`, `*.bat`) and UTF-8 BOM encoding.
 - Harmonized ASCII banners in `install.ps1`, `install-macos.sh`, and `install.sh` to display 'Legal Workstation' without platform-specific 'Linux' prefix.
 - Explicitly marked macOS support as Experimental (Beta) / Community Testing across `README.md` and `install-macos.sh` pending physical hardware verification.
+- Clarified Windows and macOS status as Beta / Experimental across Quick Start section, platform roadmap, and installer banners, establishing Linux as the primary verified stable target pending further testing on diverse Windows hardware configurations.
