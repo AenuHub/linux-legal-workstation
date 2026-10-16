@@ -164,6 +164,56 @@ engine_record_check arch.sh arch_install_system_packages arch
 engine_record_check debian.sh debian_install_system_packages debian
 engine_record_check fedora.sh fedora_install_system_packages fedora
 
+# Yerel .deb kurulumu: paket adi manifestoya kaydedilmeli (FIX 2).
+# debian_install_akia'yi sahte indirme/unzip/dpkg araclariyla sureriz.
+deb_bin="$tmp_home/debbin"; mkdir -p "$deb_bin"
+cat > "$deb_bin/curl" <<'PY'
+#!/usr/bin/env bash
+# -o <file>: sahte zip govdesi yaz
+out=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -o) out="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+[[ -n "$out" ]] && printf 'zip' > "$out"
+exit 0
+PY
+cat > "$deb_bin/unzip" <<'PY'
+#!/usr/bin/env bash
+: > "${PWD}/akia_6_8_10_amd64.deb"
+exit 0
+PY
+cat > "$deb_bin/dpkg-deb" <<'PY'
+#!/usr/bin/env bash
+echo "akia"
+exit 0
+PY
+cat > "$deb_bin/dpkg-query" <<'PY'
+#!/usr/bin/env bash
+exit 1   # paket onceden kurulu degil
+PY
+cat > "$deb_bin/sudo" <<'PY'
+#!/usr/bin/env bash
+exit 0
+PY
+chmod +x "$deb_bin"/*
+
+manifest_cli delete
+PATH="$deb_bin:$PATH" LW_OS_OVERRIDE=debian bash -c '
+    set -euo pipefail
+    source "$1/lib/debian.sh"
+    require_sudo() { :; }
+    debian_install_akia
+' _ "$DIR_ROOT" >/dev/null 2>&1 || true
+
+if grep -qx "akia" <<< "$(manifest_cli list-packages)"; then
+    pass "yerel deb paketi (akia) manifestoya kaydedildi."
+else
+    fail "yerel deb paketi kaydedilmedi: '$(manifest_cli list-packages | tr '\n' ' ')'"
+fi
+
 echo
 if [[ "$failures" -eq 0 ]]; then
     echo "==> [BASARILI] Manifesto testi tamamlandi."

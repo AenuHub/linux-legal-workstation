@@ -68,9 +68,21 @@ debian_install_akia() {
             local deb_file
             deb_file=$(find . -name "*.deb" | head -n 1)
             if [[ -n "$deb_file" && -f "$deb_file" ]]; then
+                # Capture the package name and whether it already exists *before*
+                # installing, so a locally-installed package can be recorded for
+                # `uninstall --all` without ever touching a pre-existing one.
+                local deb_pkg="" deb_was_present=false
+                deb_pkg=$(dpkg-deb -f "$deb_file" Package 2>/dev/null || true)
+                if [[ -n "$deb_pkg" ]] && pkg_present "$deb_pkg"; then
+                    deb_was_present=true
+                fi
                 require_sudo
-                sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq) || true
-                log_success "TÜBİTAK AKİS (libakisp11.so) ve AKİA başarıyla kuruldu."
+                if sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq); then
+                    if [[ -n "$deb_pkg" && "$deb_was_present" != true ]]; then
+                        manifest_cli add-package "$deb_pkg" || true
+                    fi
+                    log_success "TÜBİTAK AKİS (libakisp11.so) ve AKİA başarıyla kuruldu."
+                fi
             fi
             cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
         else
@@ -108,9 +120,18 @@ debian_install_uyap_editor() {
 
             if [[ -n "$deb_file" && -f "$deb_file" ]]; then
                 log_info "Debian paketi kuruluyor ($deb_file)..."
+                local uyap_pkg="" uyap_was_present=false
+                uyap_pkg=$(dpkg-deb -f "$deb_file" Package 2>/dev/null || true)
+                if [[ -n "$uyap_pkg" ]] && pkg_present "$uyap_pkg"; then
+                    uyap_was_present=true
+                fi
                 require_sudo
-                sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq) || true
-                log_success "UYAP Doküman Editörü başarıyla kuruldu."
+                if sudo apt-get install -y "$deb_file" 2>/dev/null || (sudo dpkg -i "$deb_file" && sudo apt-get install -f -y -qq); then
+                    if [[ -n "$uyap_pkg" && "$uyap_was_present" != true ]]; then
+                        manifest_cli add-package "$uyap_pkg" || true
+                    fi
+                    log_success "UYAP Doküman Editörü başarıyla kuruldu."
+                fi
             else
                 log_warn "Zip arşivinde .deb paketi bulunamadı."
             fi

@@ -76,9 +76,18 @@ fedora_install_akia() {
             local rpm_file
             rpm_file=$(find . -name "*.rpm" | head -n 1)
             if [[ -n "$rpm_file" && -f "$rpm_file" ]]; then
+                local rpm_pkg="" rpm_was_present=false
+                rpm_pkg=$(rpm -qp --qf '%{NAME}' "$rpm_file" 2>/dev/null || true)
+                if [[ -n "$rpm_pkg" ]] && pkg_present "$rpm_pkg"; then
+                    rpm_was_present=true
+                fi
                 require_sudo
-                sudo dnf install -y "$rpm_file" 2>/dev/null || sudo rpm -Uvh --nodeps "$rpm_file" 2>/dev/null || true
-                log_success "TÜBİTAK AKİS (libakisp11.so) ve AKİA başarıyla kuruldu."
+                if sudo dnf install -y "$rpm_file" 2>/dev/null || sudo rpm -Uvh --nodeps "$rpm_file" 2>/dev/null; then
+                    if [[ -n "$rpm_pkg" && "$rpm_was_present" != true ]]; then
+                        manifest_cli add-package "$rpm_pkg" || true
+                    fi
+                    log_success "TÜBİTAK AKİS (libakisp11.so) ve AKİA başarıyla kuruldu."
+                fi
             fi
             cd "$DIR_LIB/.." && rm -rf "$tmp_dir"
         else
