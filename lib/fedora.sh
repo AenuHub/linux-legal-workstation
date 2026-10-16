@@ -54,6 +54,7 @@ fedora_install_system_packages() {
     log_step "2/5: PC/SC Akıllı Kart servisi etkinleştiriliyor..."
     if has_cmd systemctl; then
         manifest_record_service_if_new pcscd.socket
+        manifest_record_service_if_new pcscd.service
         sudo systemctl enable --now pcscd.socket pcscd.service 2>/dev/null || true
     fi
     log_success "PC/SC Daemon (pcscd) yapılandırıldı."

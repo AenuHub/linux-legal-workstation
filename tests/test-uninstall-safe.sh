@@ -86,6 +86,13 @@ fi
 [[ ! -e "$PKG_CALLED" ]] \
     && pass "guvenli modda paket yoneticisi cagrilmadi." || fail "guvenli modda paket yoneticisi cagrildi!"
 
+# Kaldirma sonunda dagitilan kutuphane dosyalari temizlenmis olmali.
+if [[ ! -e "$HOME/.local/lib/common.sh" && ! -e "$HOME/.local/lib/manifest.py" ]]; then
+    pass "dagitilan kutuphane dosyalari (~/.local/lib) kaldirildi."
+else
+    fail "dagitilan kutuphane dosyalari kaldirilmadi."
+fi
+
 # Sistema ait yollar (sudo ile) loglandi mi?
 for want in "/opt/Akia" "/usr/local/bin/akia" "/usr/share/java/uyap-editor" "/usr/share/applications/akia.desktop"; do
     if grep -q -- "$want" "$SUDO_LOG" 2>/dev/null; then

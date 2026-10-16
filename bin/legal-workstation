@@ -426,6 +426,10 @@ cmd_uninstall() {
         uninstall_complete
     fi
 
+    # Drop the shipped runtime library last, so manifest_cli still works during
+    # a complete (--all) uninstall.
+    rm -f "$HOME/.local/lib/common.sh" "$HOME/.local/lib/manifest.py"
+
     log_success "Hukuk Çalışma İstasyonu başarıyla kaldırıldı. Sisteminiz temizlendi."
 }
 
@@ -441,6 +445,7 @@ Komutlar:
   upgrade      Tüm araçları (Adalet E-İmza, UYAP Editör, servisler, CLI) tek komutla günceller.
   update       'upgrade' komutunun kısayoludur.
   uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır.
+               '--all' ile kurulumda kaydedilen sistem paketlerini de tamamen kaldırır (TUMU ya da -y/--yes ile onay).
   start        Adalet E-İmza arka plan servisini başlatır.
   restart      Adalet E-İmza ve PC/SC servislerini yeniden başlatır.
   help         Bu yardım mesajını gösterir.

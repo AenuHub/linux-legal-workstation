@@ -153,8 +153,8 @@ engine_record_check() {
     fi
 
     svc="$(manifest_cli list-services)"
-    if [[ "$svc" == $'pcscd.socket\t0\t0' ]]; then
-        pass "$os motoru servisi etkinlestirme oncesi durumla kaydetti."
+    if grep -q $'^pcscd.socket\t0\t0$' <<<"$svc" && grep -q $'^pcscd.service\t0\t0$' <<<"$svc"; then
+        pass "$os motoru pcscd.socket ve pcscd.service servislerini kaydetti."
     else
         fail "$os motoru servis durumunu yanlis kaydetti: '$svc'"
     fi

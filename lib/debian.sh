@@ -43,6 +43,7 @@ debian_install_system_packages() {
     log_step "2/4: PC/SC Akıllı Kart servisi etkinleştiriliyor..."
     if has_cmd systemctl; then
         manifest_record_service_if_new pcscd.socket
+        manifest_record_service_if_new pcscd.service
         sudo systemctl enable --now pcscd.socket pcscd.service 2>/dev/null || true
     fi
     if ! (systemctl is-active --quiet pcscd.socket 2>/dev/null) && has_cmd service; then

@@ -53,6 +53,12 @@ main() {
 
     log_info "İşletim sistemi algılandı: ${BOLD}${target_os^^}${NC}"
 
+    # Initialise (merge) the install manifest BEFORE the OS engines record what
+    # they add, so a tracked complete uninstall can find those entries later.
+    if [[ "$DRY_RUN" != "1" ]]; then
+        manifest_init
+    fi
+
     case "$target_os" in
         arch)
             # shellcheck disable=SC1091
@@ -83,7 +89,6 @@ main() {
 
     # Record/refresh the install manifest for tracked complete uninstall
     if [[ "$DRY_RUN" != "1" ]]; then
-        manifest_init
         manifest_cli add-path "$HOME/.local/bin/legal-workstation" || true
     fi
 
