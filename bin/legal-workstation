@@ -16,6 +16,11 @@ source "$DIR_ROOT/lib/common.sh" 2>/dev/null || {
     log_error() { printf "${RED}[HATA]${NC} %s\n" "$*" >&2; }
     log_step() { printf "\n${BOLD}${CYAN}==>${NC} ${BOLD}%s${NC}\n" "$*"; }
     has_cmd() { command -v "$1" >/dev/null 2>&1; }
+    # Safe stubs so `uninstall` degrades gracefully (no manifest available) when
+    # the shipped library is missing instead of dying with "command not found".
+    remove_local_bin_from_path() { :; }
+    manifest_cli() { return 1; }
+    detect_os() { if [[ "$(uname -s)" == "Darwin" ]]; then echo macos; else echo unknown; fi; }
 }
 
 cmd_doctor() {
@@ -166,17 +171,39 @@ cmd_doctor() {
 }
 
 
+# Refresh the shipped runtime library (~/.local/lib) after a self-update so the
+# installed CLI and its manifest helpers stay in sync with the repository.
+refresh_shipped_lib() {
+    local src_dir="$1"
+    [[ -f "$src_dir/lib/common.sh" ]] || return 0
+    mkdir -p "$HOME/.local/lib"
+    cp -f "$src_dir/lib/common.sh" "$HOME/.local/lib/common.sh"
+    if [[ -f "$src_dir/lib/manifest.py" ]]; then
+        cp -f "$src_dir/lib/manifest.py" "$HOME/.local/lib/manifest.py"
+    fi
+}
+
 cmd_upgrade() {
     log_step "Legal Workstation - Hukuk Paketi Güncelleniyor..."
 
     # 1. Self-update CLI and scripts
     log_info "1/4: Hukuk çalışma istasyonu betikleri kontrol ediliyor..."
+    local raw_base="https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main"
     if [[ -d "$DIR_ROOT/.git" ]] && has_cmd git; then
         log_info "Git deposundan son güncellemeler alınıyor..."
         git -C "$DIR_ROOT" pull --ff-only 2>/dev/null || log_warn "Git deposu güncellenemedi, yerel sürümle devam ediliyor."
+        refresh_shipped_lib "$DIR_ROOT"
     else
         log_info "legal-workstation CLI son sürümü kontrol ediliyor..."
-        curl -sSL "https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/bin/legal-workstation" -o "$HOME/.local/bin/legal-workstation" 2>/dev/null && chmod +x "$HOME/.local/bin/legal-workstation" || true
+        curl -sSL "$raw_base/bin/legal-workstation" -o "$HOME/.local/bin/legal-workstation" 2>/dev/null && chmod +x "$HOME/.local/bin/legal-workstation" || true
+        # Keep the shipped library in sync with the freshly downloaded CLI.
+        if [[ -f "$DIR_ROOT/lib/common.sh" ]]; then
+            refresh_shipped_lib "$DIR_ROOT"
+        else
+            mkdir -p "$HOME/.local/lib"
+            curl -sSL "$raw_base/lib/common.sh" -o "$HOME/.local/lib/common.sh" 2>/dev/null || true
+            curl -sSL "$raw_base/lib/manifest.py" -o "$HOME/.local/lib/manifest.py" 2>/dev/null || true
+        fi
     fi
 
     # 2. Adalet E-İmza Uygulaması CDN check & update
