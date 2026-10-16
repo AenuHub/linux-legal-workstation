@@ -25,6 +25,9 @@ Check "uninstall --yes -> YES" ((Get-Parsed @('uninstall', '--yes')) -match 'YES
 Check "uninstall -Force -> YES" ((Get-Parsed @('uninstall', '-Force')) -match 'YES=True')
 Check "doctor default" ((Get-Parsed @('doctor')) -match 'CMD=doctor ALL=False YES=False')
 Check "bos -> doctor" ((Get-Parsed @()) -match 'CMD=doctor')
+Check "--help -> help" ((Get-Parsed @('--help')) -match 'CMD=help')
+Check "-h -> help" ((Get-Parsed @('-h')) -match 'CMD=help')
+Check "uninstall --help -> help" ((Get-Parsed @('uninstall', '--help')) -match 'CMD=help')
 
 if ($script:failures -gt 0) { Write-Host "==> [BASARISIZ] $($script:failures) kontrol basarisiz."; exit 1 }
 Write-Host "==> [BASARILI] Windows CLI arguman testleri gecti."

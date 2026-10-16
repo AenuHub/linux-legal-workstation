@@ -10,6 +10,11 @@
 $script:LwPositional = @($args | Where-Object { $_ -notlike '-*' })
 $script:LwFlags = @($args | Where-Object { $_ -like '-*' } | ForEach-Object { $_.ToLowerInvariant() })
 $script:LwCommand = if ($script:LwPositional.Count -gt 0) { $script:LwPositional[0].ToLowerInvariant() } else { 'doctor' }
+# '--help' / '-h' bir komut degil bir bayraktir, ama her zaman yardimi gosterir
+# (Linux CLI ile ayni davranis: 'legal-workstation uninstall --help' -> help).
+if (($script:LwFlags -contains '--help') -or ($script:LwFlags -contains '-h')) {
+    $script:LwCommand = 'help'
+}
 $script:LwAll = ($script:LwFlags -contains '--all') -or ($script:LwFlags -contains '-all')
 $script:LwYes = ($script:LwFlags -contains '-y') -or ($script:LwFlags -contains '--yes') -or
                 ($script:LwFlags -contains '-yes') -or ($script:LwFlags -contains '-force') -or
@@ -418,7 +423,7 @@ function Show-Help {
     Write-Host "  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır."
     Write-Host "               --all : Kurulumun eklediği MSI/servisleri de kaldırır (tam kaldırma)."
     Write-Host "               -y    : Onay istemeden çalıştırır (--yes / -Force)."
-    Write-Host "  help         Bu yardım mesajını görüntüler."
+    Write-Host "  help         Bu yardım mesajını görüntüler (--help / -h)."
 }
 
 # Bu betik testler tarafindan nokta-kaynak edilebilir; yalnizca normal
