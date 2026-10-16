@@ -1186,3 +1186,28 @@ Expected: all exit 0; no regressions in the Linux suite.
 Manual Windows smoke (documented, not automated): on a Windows 10/11 VM, install once, then
 `legal-workstation uninstall --all -y` and confirm (a) a pre-installed Adalet E-İmza survives, and
 (b) the suite install is gone from "Apps & Features".
+
+## Post-review corrections (do not copy the plan's original snippets verbatim)
+
+The whole-branch review found two places where the plan's own code was wrong. If you re-execute a
+task from this plan, use the corrected form:
+
+1. **Task 6 bootstrap (`$PSScriptRoot`)**: the plan's snippet is
+   `$script:LwLibPath = Join-Path $PSScriptRoot 'lib/manifest.ps1'`. Under the documented
+   `irm <install.ps1> | iex` flow `$PSScriptRoot` is empty, so `Join-Path` throws
+   `ParameterBindingValidationException` and **nothing installs**. Guard the empty case and use
+   `[System.IO.Path]::GetTempPath()` (not `$env:TEMP`, which is unset on non-Windows hosts):
+   `if ($PSScriptRoot) { Join-Path $PSScriptRoot 'lib/manifest.ps1' } else { $null }`, then fall back
+   to the temp path and only download when that file is absent. Covered by
+   `tests/windows/install-bootstrap.tests.ps1`.
+
+2. **Task 6/7 path recording**: record an artifact only when the installer *created* it. The plan
+   recorded the UETS Start Menu `.lnk` unconditionally, so a user's pre-existing
+   `PTT UETS E-İmza.lnk` was claimed and deleted by `uninstall`/`--all`. Use
+   `Add-LwManifestCreatedPath -Path <path> -Existed <pre-existence check before Save()>`
+   (`lib/manifest.ps1`) for the shortcut and the UETS directory. Covered by
+   `tests/windows/manifest.tests.ps1`.
+
+Also: the CLI's `upgrade` path must install MSIs through `Install-LwMsi` (never a bare
+`Start-Process msiexec.exe /i`), or an upgrade goes unrecorded and survives `uninstall --all`.
+
