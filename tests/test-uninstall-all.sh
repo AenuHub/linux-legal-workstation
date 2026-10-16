@@ -84,6 +84,89 @@ else
     pass "manifesto yok: paket/servis kaldirma reddedildi."
 fi
 
+# --- Case 3: empty packages_added but service + path recorded -> still revert/remove ---
+home3="$(mktemp -d /tmp/lw-all-svconly-XXXXXX)"
+trap 'rm -rf "$tmp_home" "$home2" "$home3" "$home4"' EXIT
+mkdir -p "$home3/.local/share/legal-workstation"
+cat > "$home3/.local/share/legal-workstation/manifest.json" <<'JSON'
+{
+  "manifest_version": 1,
+  "installed_at": "2026-10-16T00:00:00Z",
+  "os_family": "arch",
+  "packages_added": [],
+  "services_enabled": [{"unit": "pcscd.socket", "was_enabled": false, "was_active": false}],
+  "paths": ["/usr/share/lw-test-only-path"],
+  "rc_files": []
+}
+JSON
+
+log3="$home3/sudo.log"
+run_all "$home3" "$log3"
+
+for want in "systemctl disable pcscd.socket" \
+            "systemctl stop pcscd.socket" \
+            "/usr/share/lw-test-only-path"; do
+    if grep -q -- "$want" "$log3" 2>/dev/null; then
+        pass "paketsiz manifesto: hedeflendi: $want"
+    else
+        fail "paketsiz manifesto: hedeflenmedi: $want"
+    fi
+done
+
+if grep -q "pacman" "$log3" 2>/dev/null; then
+    fail "paket listesi bosken paket yoneticisi cagrildi."
+else
+    pass "paket listesi bos: paket yoneticisi cagrilmadi."
+fi
+
+if [[ ! -f "$home3/.local/share/legal-workstation/manifest.json" ]]; then
+    pass "paketsiz manifesto --all sonrasi silindi."
+else
+    fail "paketsiz manifesto silinmedi."
+fi
+
+# --- Case 4: package manager fails -> best-effort, must still delete manifest ---
+home4="$(mktemp -d /tmp/lw-all-failpkg-XXXXXX)"
+trap 'rm -rf "$tmp_home" "$home2" "$home3" "$home4"' EXIT
+fakebin_fail="$home4/fakebin"; mkdir -p "$fakebin_fail"
+cat > "$fakebin_fail/sudo" <<'PY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${SUDO_LOG:?}"
+case "$1" in
+    pacman) exit 1 ;;
+esac
+exit 0
+PY
+chmod +x "$fakebin_fail/sudo"
+
+mkdir -p "$home4/.local/share/legal-workstation"
+cat > "$home4/.local/share/legal-workstation/manifest.json" <<'JSON'
+{
+  "manifest_version": 1,
+  "installed_at": "2026-10-16T00:00:00Z",
+  "os_family": "arch",
+  "packages_added": ["opensc", "ccid", "pcsc-tools"],
+  "services_enabled": [],
+  "paths": [],
+  "rc_files": []
+}
+JSON
+
+log4="$home4/sudo.log"
+PATH="$fakebin_fail:$PATH" run_all "$home4" "$log4"
+
+if grep -q -- "pacman -Rs --noconfirm opensc ccid pcsc-tools" "$log4" 2>/dev/null; then
+    pass "başarisiz paket yoneticisi: paket kaldirma denendi."
+else
+    fail "başarisiz paket yoneticisi: paket kaldirma denenmedi."
+fi
+
+if [[ ! -f "$home4/.local/share/legal-workstation/manifest.json" ]]; then
+    pass "paket yoneticisi hata verse de manifesto silindi (best-effort)."
+else
+    fail "paket yoneticisi hatasi kaldirmayi erken sonlandirdi."
+fi
+
 echo
 if [[ "$failures" -eq 0 ]]; then
     echo "==> [BASARILI] Tam kaldirma testi tamamlandi."

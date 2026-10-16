@@ -213,9 +213,14 @@ uninstall_complete() {
         return 0
     fi
 
-    local pkgs
+    local pkgs services paths
     pkgs="$(manifest_cli list-packages 2>/dev/null || true)"
-    if [[ -z "$pkgs" ]]; then
+    services="$(manifest_cli list-services 2>/dev/null || true)"
+    paths="$(manifest_cli list-paths 2>/dev/null || true)"
+
+    # Only refuse when the manifest records nothing at all. A manifest may
+    # legitimately have no new packages but still have services/paths to revert.
+    if [[ -z "$pkgs" && -z "$services" && -z "$paths" ]]; then
         log_warn "Kurulum manifestosu bulunamadı; sistem paketleri ve servisler korunuyor."
         manifest_cli delete 2>/dev/null || true
         return 0
@@ -233,24 +238,27 @@ uninstall_complete() {
         if [[ "$was_active" == "0" ]]; then
             sudo systemctl stop "$unit" 2>/dev/null || true
         fi
-    done < <(manifest_cli list-services 2>/dev/null || true)
+    done <<< "$services"
 
-    # Remove exactly the packages recorded as newly added
-    local -a pkg_list
-    mapfile -t pkg_list <<< "$pkgs"
-    case "$(detect_os)" in
-        arch)   sudo pacman -Rs --noconfirm "${pkg_list[@]}" ;;
-        debian) sudo apt-get remove -y "${pkg_list[@]}" && sudo apt-get autoremove -y ;;
-        fedora) sudo dnf remove -y "${pkg_list[@]}" ;;
-        *)      log_warn "Bu platformda paket temizliği desteklenmiyor." ;;
-    esac
+    # Remove exactly the packages recorded as newly added (best-effort: a failing
+    # package manager must not abort the rest of the uninstall).
+    if [[ -n "$pkgs" ]]; then
+        local -a pkg_list
+        mapfile -t pkg_list <<< "$pkgs"
+        case "$(detect_os)" in
+            arch)   sudo pacman -Rs --noconfirm "${pkg_list[@]}" ;;
+            debian) sudo apt-get remove -y "${pkg_list[@]}" && sudo apt-get autoremove -y ;;
+            fedora) sudo dnf remove -y "${pkg_list[@]}" ;;
+            *)      log_warn "Bu platformda paket temizliği desteklenmiyor." ;;
+        esac || log_warn "Paket kaldırma kısmen başarısız oldu."
+    fi
 
     # Remaining recorded system paths
     local path
     while IFS= read -r path; do
         [[ -n "$path" ]] || continue
         sudo rm -rf "$path" 2>/dev/null || true
-    done < <(manifest_cli list-paths 2>/dev/null || true)
+    done <<< "$paths"
 
     manifest_cli delete 2>/dev/null || true
     log_success "Tam kaldırma tamamlandı."
