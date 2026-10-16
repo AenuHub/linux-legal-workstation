@@ -57,3 +57,4 @@ Check "revert plan: start tipi bilinmiyorsa Manual" ($plan3.SetStartupType -eq '
 
 if ($script:failures -gt 0) { Write-Host "==> [BASARISIZ] $($script:failures) kontrol basarisiz."; exit 1 }
 Write-Host "==> [BASARILI] Windows manifest testleri gecti."
+exit 0

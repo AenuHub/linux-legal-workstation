@@ -15,9 +15,11 @@ docker run --rm \
     pwsh -NoProfile -Command '
         New-Item -ItemType Directory -Path $env:LW_TEST_ROOT -Force | Out-Null
         & /workspace/tests/windows/manifest.tests.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        & /workspace/tests/windows/cli.tests.ps1
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
         & /workspace/tests/windows/uninstall.tests.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
     '
 
 echo

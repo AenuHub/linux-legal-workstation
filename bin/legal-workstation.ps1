@@ -5,15 +5,20 @@
     Avukatlar için Windows ortamında UYAP, E-İmza ve akıllı kart bileşenlerini teşhis eder ve günceller.
 #>
 
-[CmdletBinding()]
-param (
-    [Parameter(Position = 0)]
-    [ValidateSet('doctor', 'upgrade', 'update', 'uninstall', 'remove', 'start', 'restart', 'help', '')]
-    [string]$Command = 'doctor',
+# PowerShell `--all` / `-y` bayraklarini baglayamaz; Linux ile ayni arayuz icin
+# ham $args elle ayristirilir.
+$script:LwPositional = @($args | Where-Object { $_ -notlike '-*' })
+$script:LwFlags = @($args | Where-Object { $_ -like '-*' } | ForEach-Object { $_.ToLowerInvariant() })
+$script:LwCommand = if ($script:LwPositional.Count -gt 0) { $script:LwPositional[0].ToLowerInvariant() } else { 'doctor' }
+$script:LwAll = ($script:LwFlags -contains '--all') -or ($script:LwFlags -contains '-all')
+$script:LwYes = ($script:LwFlags -contains '-y') -or ($script:LwFlags -contains '--yes') -or
+                ($script:LwFlags -contains '-yes') -or ($script:LwFlags -contains '-force') -or
+                ($script:LwFlags -contains '--force')
 
-    [Parameter(Position = 1)]
-    [switch]$Force
-)
+# Bu betik testler tarafindan nokta-kaynak edilebilir; komut yalnizca normal
+# calistirmada dagitilir (asagida).
+$script:LwLibFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'lib/manifest.ps1'
+if (Test-Path -LiteralPath $script:LwLibFile) { . $script:LwLibFile }
 
 $ErrorActionPreference = 'Continue'
 
@@ -273,7 +278,8 @@ function Invoke-Upgrade {
 }
 
 function Invoke-Uninstall {
-    param([switch]$ForceUninstall)
+    param([switch]$Complete, [switch]$AssumeYes, [switch]$ForceUninstall)
+    $ForceUninstall = $ForceUninstall -or $AssumeYes
 
     if (-not $ForceUninstall) {
         Write-Host "`nDİKKAT: Bu işlem Legal Workstation tarafından kurulan Adalet E-İmza servisini, UETS dosyalarını ve CLI araçlarını kaldıracaktır." -ForegroundColor Yellow
@@ -348,15 +354,27 @@ function Show-Help {
     Write-Host "  upgrade      Adalet E-İmza ve UYAP bileşenlerini resmi CDN üzerinden günceller."
     Write-Host "  update       'upgrade' komutunun kısayoludur."
     Write-Host "  uninstall    Kurulan servisleri, başlatıcıları ve çalışma ortamını sistemden güvenle kaldırır."
+    Write-Host "               --all : Kurulumun eklediği MSI/servisleri de kaldırır (tam kaldırma)."
+    Write-Host "               -y    : Onay istemeden çalıştırır (--yes / -Force)."
     Write-Host "  help         Bu yardım mesajını görüntüler."
 }
 
-switch ($Command) {
-    'doctor'    { Invoke-Doctor }
-    'upgrade'   { Invoke-Upgrade }
-    'update'    { Invoke-Upgrade }
-    'uninstall' { Invoke-Uninstall -ForceUninstall:$Force }
-    'remove'    { Invoke-Uninstall -ForceUninstall:$Force }
-    'help'      { Show-Help }
-    default     { Invoke-Doctor }
+# Bu betik testler tarafindan nokta-kaynak edilebilir; yalnizca normal
+# calistirmada komut dogrulanir ve dagitim yapilir.
+if ($MyInvocation.InvocationName -ne '.') {
+    $valid = @('doctor', 'upgrade', 'update', 'uninstall', 'remove', 'start', 'restart', 'help', '')
+    if ($valid -notcontains $script:LwCommand) {
+        Write-Failure "Bilinmeyen komut: $script:LwCommand"
+        Show-Help
+        exit 1
+    }
+    switch ($script:LwCommand) {
+        'doctor'    { Invoke-Doctor }
+        'upgrade'   { Invoke-Upgrade }
+        'update'    { Invoke-Upgrade }
+        'uninstall' { Invoke-Uninstall -Complete:$script:LwAll -AssumeYes:$script:LwYes }
+        'remove'    { Invoke-Uninstall -Complete:$script:LwAll -AssumeYes:$script:LwYes }
+        'help'      { Show-Help }
+        default     { Invoke-Doctor }
+    }
 }
