@@ -55,8 +55,10 @@ main() {
 
     # Initialise (merge) the install manifest BEFORE the OS engines record what
     # they add, so a tracked complete uninstall can find those entries later.
+    # This also bootstraps python3 (required by the manifest tool) which on a
+    # minimal system is otherwise installed too late to be recorded.
     if [[ "$DRY_RUN" != "1" ]]; then
-        manifest_init
+        manifest_bootstrap || log_warn "Kurulum manifestosu baslatilamadi; tam kaldirma kaydi sinirli olabilir."
     fi
 
     case "$target_os" in

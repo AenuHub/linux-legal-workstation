@@ -79,14 +79,27 @@ def main(argv: list[str]) -> int:
             return 2
         unit, was_enabled, was_active = args
         data = base_doc(load())
+        # Merge with any prior record using AND, so re-running the installer
+        # never loses the *original* pre-install state. Example: the first run
+        # saw the service disabled (0) and enabled it; a second run now sees it
+        # enabled (1), but the baseline must stay 0 so `uninstall --all` still
+        # reverts the change we made.
+        prev = next(
+            (s for s in data["services_enabled"] if s.get("unit") == unit), None
+        )
+        new_enabled = was_enabled == "1"
+        new_active = was_active == "1"
+        if prev is not None:
+            new_enabled = bool(prev.get("was_enabled")) and new_enabled
+            new_active = bool(prev.get("was_active")) and new_active
         data["services_enabled"] = [
             s for s in data["services_enabled"] if s.get("unit") != unit
         ]
         data["services_enabled"].append(
             {
                 "unit": unit,
-                "was_enabled": was_enabled == "1",
-                "was_active": was_active == "1",
+                "was_enabled": new_enabled,
+                "was_active": new_active,
             }
         )
         save(data)

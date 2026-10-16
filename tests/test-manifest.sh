@@ -27,13 +27,25 @@ else
     fail "paket listesi beklenenden farkli: '$pkgs'"
 fi
 
-manifest_record_service_if_new pcscd.socket
-manifest_cli add-service pcscd.socket 1 1   # replaces prior entry
+# Yeniden kurulum senaryosu: ilk kurulumda servis KAPALIYDI (0/0) ve biz actik.
+# Ikinci kurulumda servis artik ACIK gorunur (1/1) ama taban cizgisi (0/0)
+# KORUNMALIDIR; aksi halde uninstall --all servisi geri almaz.
+manifest_cli add-service pcscd.socket 0 0
+manifest_cli add-service pcscd.socket 1 1
 svc="$(manifest_cli list-services)"
-if [[ "$svc" == $'pcscd.socket\t1\t1' ]]; then
-    pass "servis kaydi olusturuldu ve guncellendi."
+if [[ "$svc" == $'pcscd.socket\t0\t0' ]]; then
+    pass "servis taban cizgisi yeniden kayitta korunuyor (0/0)."
 else
-    fail "servis kaydi beklenenden farkli: '$svc'"
+    fail "servis taban cizgisi bozuldu: '$svc'"
+fi
+
+# Zaten acik olan bir servis (bastan 1/1) 1/1 kalmali.
+manifest_cli add-service pcscd.service 1 1
+manifest_cli add-service pcscd.service 1 1
+if grep -q $'^pcscd.service\t1\t1$' <<<"$(manifest_cli list-services)"; then
+    pass "onceden acik servis 1/1 olarak korunuyor."
+else
+    fail "onceden acik servis yanlis kaydedildi."
 fi
 
 manifest_record_rc "$HOME/.bashrc"          # does not exist -> ignored
@@ -62,6 +74,19 @@ if [[ ! -f "$manifest_file" ]]; then
     pass "manifest silindi."
 else
     fail "manifest silinmedi."
+fi
+
+# python3 tam kaldirmada silinmis olabilir; dosya bash ile de temizlenebilmeli.
+manifest_init
+if [[ -f "$manifest_file" ]]; then
+    ( manifest_purge_file ) 2>/dev/null || true
+    if [[ ! -f "$manifest_file" ]]; then
+        pass "manifest_purge_file python3'ten bagimsiz temizledi."
+    else
+        fail "manifest_purge_file manifesti temizlemedi."
+    fi
+else
+    fail "manifest yeniden olusturulamadi."
 fi
 
 # pkg_present ile kayit: 'curl' kurulu sayilsin, 'opensc' kurulu olmasin.

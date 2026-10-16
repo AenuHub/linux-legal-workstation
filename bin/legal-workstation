@@ -19,6 +19,8 @@ source "$DIR_ROOT/lib/common.sh" 2>/dev/null || {
     # Safe stubs so `uninstall` degrades gracefully (no manifest available) when
     # the shipped library is missing instead of dying with "command not found".
     remove_local_bin_from_path() { :; }
+    remove_recorded_system_path() { :; }
+    manifest_purge_file() { :; }
     manifest_cli() { return 1; }
     detect_os() { if [[ "$(uname -s)" == "Darwin" ]]; then echo macos; else echo unknown; fi; }
 }
@@ -250,6 +252,7 @@ uninstall_complete() {
     if [[ -z "$pkgs" && -z "$services" && -z "$paths" ]]; then
         log_warn "Kurulum manifestosu bulunamadı; sistem paketleri ve servisler korunuyor."
         manifest_cli delete 2>/dev/null || true
+        manifest_purge_file
         return 0
     fi
 
@@ -274,20 +277,34 @@ uninstall_complete() {
         mapfile -t pkg_list <<< "$pkgs"
         case "$(detect_os)" in
             arch)   sudo pacman -Rs --noconfirm "${pkg_list[@]}" ;;
-            debian) sudo apt-get remove -y "${pkg_list[@]}" && sudo apt-get autoremove -y ;;
+            debian)
+                # apt's resolver can refuse a bulk removal when a removed package
+                # is a dependency of a kept metapackage (e.g. openjdk-11-jre ->
+                # default-jre-headless). Fall back to removing each package on its
+                # own (dependents first), then sweep orphaned dependencies.
+                if ! sudo apt-get remove -y "${pkg_list[@]}" 2>/dev/null; then
+                    log_warn "Toplu paket kaldirma tamamlanamadi; paketler tek tek kaldiriliyor..."
+                    local i
+                    for ((i=${#pkg_list[@]}-1; i>=0; i--)); do
+                        sudo apt-get remove -y "${pkg_list[$i]}" 2>/dev/null || true
+                    done
+                fi
+                sudo apt-get autoremove -y 2>/dev/null || true
+                ;;
             fedora) sudo dnf remove -y "${pkg_list[@]}" ;;
             *)      log_warn "Bu platformda paket temizliği desteklenmiyor." ;;
         esac || log_warn "Paket kaldırma kısmen başarısız oldu."
     fi
 
-    # Remaining recorded system paths
+    # Remaining recorded system paths (same package-ownership guard as above).
     local path
     while IFS= read -r path; do
         [[ -n "$path" ]] || continue
-        sudo rm -rf "$path" 2>/dev/null || true
+        remove_recorded_system_path "$path"
     done <<< "$paths"
 
     manifest_cli delete 2>/dev/null || true
+    manifest_purge_file
     log_success "Tam kaldırma tamamlandı."
 }
 
@@ -366,10 +383,9 @@ cmd_uninstall() {
     rm -f "$HOME/.local/share/applications/uets.desktop"
     rm -f "$HOME/.local/share/applications/akia.desktop"
     rm -f "$HOME/.local/share/icons/adalet-eimza-tray."* 2>/dev/null || true
-    if [[ -w /usr/share/applications ]] || has_cmd sudo; then
-        sudo rm -f "/usr/share/applications/uets.desktop" 2>/dev/null || true
-        sudo rm -f "/usr/share/applications/akia.desktop" 2>/dev/null || true
-    fi
+    # NOTE: /usr/share/applications/{akia,uets}.desktop are system-scope files.
+    # They are removed further below only when the install manifest records them
+    # as suite-created, so a pre-existing AKİA/UETS entry is never touched.
 
     # 3. Remove suite-specific binaries and libraries
     log_info "3/5: Uygulama ve kütüphaneler temizleniyor..."
@@ -386,23 +402,15 @@ cmd_uninstall() {
     # software (including package-manager-owned files) is never removed here.
     local recorded_paths
     recorded_paths="$(manifest_cli list-paths 2>/dev/null || true)"
-    local sys_path owned
+    local sys_path
     for sys_path in /usr/local/bin/akia /usr/lib/libakisp11.so /opt/Akia \
-                    /usr/share/java/uyap-editor /opt/uets /usr/local/bin/uets-eimza; do
+                    /usr/share/java/uyap-editor /opt/uets /usr/local/bin/uets-eimza \
+                    /usr/share/applications/akia.desktop /usr/share/applications/uets.desktop; do
         if ! grep -qxF "$sys_path" <<< "$recorded_paths"; then
             log_info "Korunuyor (kurulumda bu araç tarafından eklenmemiş): $sys_path"
             continue
         fi
-        owned=false
-        case "$(detect_os)" in
-            debian) if has_cmd dpkg && dpkg -S "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
-            fedora) if has_cmd rpm && rpm -qf "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
-        esac
-        if [[ "$owned" == true ]]; then
-            log_warn "Paket yöneticisine ait, atlanıyor: $sys_path (uninstall --all paketi kaldırır)."
-            continue
-        fi
-        sudo rm -rf "$sys_path" 2>/dev/null || true
+        remove_recorded_system_path "$sys_path"
     done
 
     # Remove isolated Temurin JRE if installed exclusively by suite

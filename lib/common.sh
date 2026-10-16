@@ -175,7 +175,7 @@ EOF
         sudo chmod +x "$launcher_path"
 
         # Track the system paths this suite created for complete removal.
-        manifest_record_path "$uets_dir" "$launcher_path"
+        manifest_record_path "$uets_dir" "$launcher_path" "$desktop_path"
 
         # Create desktop shortcut
         sudo tee "$desktop_path" > /dev/null << EOF
@@ -245,7 +245,9 @@ Keywords=akia;palma;akis;pin;puk;blokaj;sertifika;e-imza;kart;turktrust;barokart
 Terminal=false"
 
         if [[ -d "$desktop_dir" ]]; then
-            echo "$entry_content" | sudo tee "$desktop_dir/akia.desktop" > /dev/null 2>&1 || true
+            if echo "$entry_content" | sudo tee "$desktop_dir/akia.desktop" > /dev/null 2>&1; then
+                manifest_record_path "$desktop_dir/akia.desktop"
+            fi
         fi
         mkdir -p "$user_desktop_dir"
         echo "$entry_content" > "$user_desktop_dir/akia.desktop" 2>/dev/null || true
@@ -296,9 +298,52 @@ manifest_cli() {
     python3 "$LW_LIB_DIR/manifest.py" "$@"
 }
 
+# Remove the manifest file without relying on python3 (a complete uninstall may
+# have just removed python3 itself). Idempotent.
+manifest_purge_file() {
+    local dir="${XDG_DATA_HOME:-$HOME/.local/share}/legal-workstation"
+    rm -f "$dir/manifest.json" 2>/dev/null || true
+    rmdir "$dir" 2>/dev/null || true
+}
+
 # Create/merge the manifest. Uses the detected OS family for the schema record.
 manifest_init() {
     LW_OS_FAMILY="$(detect_os)" manifest_cli init || true
+}
+
+# Best-effort: make `python3` available so the manifest tool can run. python3 is
+# usually part of the engine's package list, but on a truly minimal system it is
+# installed *after* the first recording call, which would silently drop the base
+# packages from the manifest. Bootstrap it up front instead.
+ensure_manifest_runtime() {
+    has_cmd python3 && return 0
+    case "$(detect_os)" in
+        arch|debian|fedora) require_sudo ;;
+        *) return 1 ;;
+    esac
+    case "$(detect_os)" in
+        arch)   sudo pacman -S --needed --noconfirm python3 >/dev/null 2>&1 ;;
+        debian) sudo apt-get update -qq >/dev/null 2>&1 || true
+                sudo apt-get install -y -qq python3 >/dev/null 2>&1 ;;
+        fedora) sudo dnf install -y python3 >/dev/null 2>&1 ;;
+    esac
+    has_cmd python3
+}
+
+# Initialise the manifest for an installation. Safe on any system: bootstraps
+# python3, records the OS family, and records python3 itself when the installer
+# had to add it (so `uninstall --all` removes it again).
+manifest_bootstrap() {
+    local py_new=false
+    if ! has_cmd python3; then
+        py_new=true
+        ensure_manifest_runtime || true
+    fi
+    has_cmd python3 || return 1
+    manifest_init || true
+    if [[ "$py_new" == true ]]; then
+        manifest_cli add-package python3 || true
+    fi
 }
 
 # Record only packages that are not already present on the system.
@@ -349,8 +394,26 @@ pkg_present() {
     esac
 }
 
+# Remove a suite-created system path, but never one owned by the package
+# manager: deleting package-owned files behind dpkg/rpm would corrupt the
+# package database. In that case `uninstall --all` removes the package instead.
+remove_recorded_system_path() {
+    local sys_path="$1" owned=false
+    case "$(detect_os)" in
+        debian) if has_cmd dpkg && dpkg -S "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
+        fedora) if has_cmd rpm && rpm -qf "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
+    esac
+    if [[ "$owned" == true ]]; then
+        log_warn "Paket yoneticisine ait, atlaniyor: $sys_path (uninstall --all paketi kaldirir)."
+        return 0
+    fi
+    sudo rm -rf "$sys_path" 2>/dev/null || true
+}
+
 # Remove the "# Added by legal-workstation" marker and the PATH export line that
 # follows it from the user's shell rc files. Idempotent and safe on any file.
+# Writes *through* the original path (never renames a temp file over it) so a
+# symlinked rc (dotfiles/stow/chezmoi) and its permissions are preserved.
 remove_local_bin_from_path() {
     local marker="# Added by legal-workstation"
     local rc tmp
@@ -361,9 +424,14 @@ remove_local_bin_from_path() {
         fi
         tmp="$(mktemp)"
         awk -v m="$marker" '
-            $0 == m { skip = 1; next }
-            skip && /^export PATH=/ { skip = 0; next }
+            { line = $0; sub(/\r$/, "", line) }
+            line == m { skip = 1; next }
+            skip && line ~ /^export PATH=/ { skip = 0; next }
             { skip = 0; print }
-        ' "$rc" > "$tmp" && mv "$tmp" "$rc"
+        ' "$rc" > "$tmp"
+        if ! cat "$tmp" > "$rc" 2>/dev/null; then
+            log_warn "PATH kaydi guncellenemedi: $rc"
+        fi
+        rm -f "$tmp"
     done
 }

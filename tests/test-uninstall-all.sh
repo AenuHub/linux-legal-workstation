@@ -172,6 +172,106 @@ else
     fail "paket yoneticisi hatasi kaldirmayi erken sonlandirdi."
 fi
 
+# --- Case 5: paket-sahipli kayitli yol --all'da da korunmali ---
+# Guvenli dongu sahiplik kontrolu yapar; uninstall_complete paths dongusu de
+# ayni korumayi uygulamali (aksi halde paket dosyalari rm -rf ile silinir).
+home5="$(mktemp -d /tmp/lw-all-owned-XXXXXX)"
+trap 'rm -rf "$tmp_home" "$home2" "$home3" "$home4" "$home5"' EXIT
+fakebin5="$home5/fakebin"; mkdir -p "$fakebin5"
+cat > "$fakebin5/sudo" <<'PY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${SUDO_LOG:?}"
+exit 0
+PY
+cat > "$fakebin5/systemctl" <<'PY'
+#!/usr/bin/env bash
+exit 0
+PY
+cat > "$fakebin5/dpkg" <<'PY'
+#!/usr/bin/env bash
+# dpkg -S <path>: yol bir pakete ait
+exit 0
+PY
+cat > "$fakebin5/apt-get" <<'PY'
+#!/usr/bin/env bash
+exit 0
+PY
+chmod +x "$fakebin5"/*
+mkdir -p "$home5/.local/share/legal-workstation"
+cat > "$home5/.local/share/legal-workstation/manifest.json" <<'JSON'
+{
+  "manifest_version": 1,
+  "installed_at": "2026-10-16T00:00:00Z",
+  "os_family": "debian",
+  "packages_added": ["uyap-editor"],
+  "services_enabled": [],
+  "paths": ["/usr/share/java/uyap-editor"],
+  "rc_files": []
+}
+JSON
+log5="$home5/sudo.log"
+HOME="$home5" XDG_DATA_HOME="$home5/.local/share" SUDO_LOG="$log5" LW_OS_OVERRIDE=debian \
+    PATH="$fakebin5:$PATH" bash "$DIR_ROOT/bin/legal-workstation" uninstall --all -y >/dev/null 2>&1 || true
+if grep -q 'rm -rf /usr/share/java/uyap-editor' "$log5" 2>/dev/null; then
+    fail "paket-sahipli kayitli yol --all'da rm -rf ile silindi (sahiplik korunmadi)."
+else
+    pass "paket-sahipli kayitli yol --all'da da korundu."
+fi
+
+# --- Case 6: apt toplu kaldirmayi reddederse tek tek kaldirmaya dusulmeli ---
+# (openjdk-11-jre -> default-jre-headless gibi bagimliliklar toplu remove'u bozar.)
+home6="$(mktemp -d /tmp/lw-all-aptfallback-XXXXXX)"
+trap 'rm -rf "$tmp_home" "$home2" "$home3" "$home4" "$home5" "$home6"' EXIT
+fakebin6="$home6/fakebin"; mkdir -p "$fakebin6"
+cat > "$fakebin6/sudo" <<'PY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${SUDO_LOG:?}"
+"$@"
+PY
+cat > "$fakebin6/systemctl" <<'PY'
+#!/usr/bin/env bash
+exit 0
+PY
+# apt-get: toplu (birden fazla paket) remove -> hata; tek paket remove -> basari.
+cat > "$fakebin6/apt-get" <<'PY'
+#!/usr/bin/env bash
+pkgs=(); seen=0
+for a in "$@"; do
+    if [[ "$a" == "remove" ]]; then seen=1; continue; fi
+    if [[ "$seen" == "1" && "$a" != "-y" ]]; then pkgs+=("$a"); fi
+done
+[[ "${#pkgs[@]}" -gt 1 ]] && exit 100
+exit 0
+PY
+chmod +x "$fakebin6"/*
+mkdir -p "$home6/.local/share/legal-workstation"
+cat > "$home6/.local/share/legal-workstation/manifest.json" <<'JSON'
+{
+  "manifest_version": 1,
+  "installed_at": "2026-10-16T00:00:00Z",
+  "os_family": "debian",
+  "packages_added": ["aaa", "bbb", "ccc"],
+  "services_enabled": [],
+  "paths": [],
+  "rc_files": []
+}
+JSON
+log6="$home6/sudo.log"
+HOME="$home6" XDG_DATA_HOME="$home6/.local/share" SUDO_LOG="$log6" LW_OS_OVERRIDE=debian \
+    PATH="$fakebin6:$PATH" bash "$DIR_ROOT/bin/legal-workstation" uninstall --all -y >/dev/null 2>&1 || true
+for p in aaa bbb ccc; do
+    if grep -qx "apt-get remove -y $p" "$log6" 2>/dev/null; then
+        pass "apt toplu hatasinda tek tek kaldirildi: $p"
+    else
+        fail "apt toplu hatasinda tek tek kaldirma yok: $p"
+    fi
+done
+if grep -qx "apt-get autoremove -y" "$log6" 2>/dev/null; then
+    pass "apt toplu hatasinda orphan temizligi (autoremove) yapildi."
+else
+    fail "apt toplu hatasinda autoremove calismadi."
+fi
+
 echo
 if [[ "$failures" -eq 0 ]]; then
     echo "==> [BASARILI] Tam kaldirma testi tamamlandi."

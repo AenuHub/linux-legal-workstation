@@ -9,11 +9,17 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - **The documented one-liner (`curl -fsSL .../install.sh | bash`) could not work**: when piped, `BASH_SOURCE[0]` is unset and `set -u` aborted on `unbound variable`. `install.sh` and `install-macos.sh` now detect this and bootstrap by fetching the repository into a temp dir before re-executing.
 - **Dead UYAP Doküman Editörü URL** in the Arch no-AUR-helper fallback (`https://cdn.uyap.gov.tr/editor/uyap-editor.deb`, HTTP 404). Replaced with the official Adalet Bakanlığı mirror used by the Debian/Fedora engines, and the extraction now stays inside a temp dir instead of writing `tar -C /` directly.
 - **`~/.local/bin` was never added to `PATH`** even though the installer tells users to run `legal-workstation`. New idempotent `ensure_local_bin_on_path` helper updates existing shell rc files.
+- **Complete uninstall was incomplete on a fresh machine**: the manifest is written with `python3`, but `python3` is installed by the engine *after* the first recording call, so on a minimal system (no pre-installed `python3`) the base packages (`pcscd`, `opensc`, `openjdk-11-jre`, …) were never recorded and `uninstall --all` left them behind. `install.sh` now bootstraps `python3` via `manifest_bootstrap` before any recording.
+- **Re-running the installer corrupted the service baseline**: a second run saw the services it had enabled and overwrote the recorded pre-install state, so `uninstall --all` no longer reverted them. Service records are now merged with AND, preserving the original state.
+- **`uninstall` broke symlinked rc files** (dotfiles/stow/chezmoi): it replaced `~/.bashrc` etc. via `mv`, destroying the symlink and leaving the `PATH` marker in the real file. It now writes through the original path, preserving the link and permissions, and tolerates CRLF line endings.
+- **`/usr/share/applications/{akia,uets}.desktop` were removed unconditionally**, even when pre-existing. They are now recorded at install time and removed only when the manifest says the suite created them.
+- **`uninstall --all` bypassed the package-ownership guard** for recorded system paths (it could `rm -rf` package-owned files if package removal failed). Path removal now shares one ownership-checked helper.
 
 ### Added
 - GitHub Actions CI (`.github/workflows/ci.yml`): bash syntax check, ShellCheck gate, bootstrap/PATH smoke tests, and a PowerShell parser job.
 - `tests/test-bootstrap-smoke.sh` — guards against the typo class, verifies every `lib/*.sh` sources independently, and runs the piped install end-to-end.
 - `tests/test-local-bin-path.sh` — verifies the PATH helper is idempotent.
+- `tests/test-manifest-bootstrap.sh` — verifies the fresh-system (`python3`-less) manifest bootstrap records the OS family, the base packages, and `python3` itself.
 - `LW_DRY_RUN=1` dry-run mode for the Linux/macOS installers.
 - **Complete uninstall (`legal-workstation uninstall --all`)**: removes exactly the system
   packages and services the installer newly added, using an install-time manifest
