@@ -205,6 +205,57 @@ cmd_upgrade() {
     cmd_doctor
 }
 
+# Complete removal (--all): revert services we enabled and remove only the
+# packages recorded as newly added at install time.
+uninstall_complete() {
+    if ! has_cmd python3; then
+        log_warn "python3 bulunamadı; tam kaldırma (paket temizliği) atlanıyor."
+        return 0
+    fi
+
+    local pkgs
+    pkgs="$(manifest_cli list-packages 2>/dev/null || true)"
+    if [[ -z "$pkgs" ]]; then
+        log_warn "Kurulum manifestosu bulunamadı; sistem paketleri ve servisler korunuyor."
+        manifest_cli delete 2>/dev/null || true
+        return 0
+    fi
+
+    log_step "Tam kaldırma: kurulumda eklenen sistem paketleri ve servisler kaldırılıyor..."
+
+    # Revert services only where we changed the state
+    local unit was_enabled was_active
+    while IFS=$'\t' read -r unit was_enabled was_active; do
+        [[ -n "$unit" ]] || continue
+        if [[ "$was_enabled" == "0" ]]; then
+            sudo systemctl disable "$unit" 2>/dev/null || true
+        fi
+        if [[ "$was_active" == "0" ]]; then
+            sudo systemctl stop "$unit" 2>/dev/null || true
+        fi
+    done < <(manifest_cli list-services 2>/dev/null || true)
+
+    # Remove exactly the packages recorded as newly added
+    local -a pkg_list
+    mapfile -t pkg_list <<< "$pkgs"
+    case "$(detect_os)" in
+        arch)   sudo pacman -Rs --noconfirm "${pkg_list[@]}" ;;
+        debian) sudo apt-get remove -y "${pkg_list[@]}" && sudo apt-get autoremove -y ;;
+        fedora) sudo dnf remove -y "${pkg_list[@]}" ;;
+        *)      log_warn "Bu platformda paket temizliği desteklenmiyor." ;;
+    esac
+
+    # Remaining recorded system paths
+    local path
+    while IFS= read -r path; do
+        [[ -n "$path" ]] || continue
+        sudo rm -rf "$path" 2>/dev/null || true
+    done < <(manifest_cli list-paths 2>/dev/null || true)
+
+    manifest_cli delete 2>/dev/null || true
+    log_success "Tam kaldırma tamamlandı."
+}
+
 cmd_uninstall() {
     shift # drop the "uninstall"/"remove" verb
     local force=false all=false arg
