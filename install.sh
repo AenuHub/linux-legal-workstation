@@ -81,13 +81,21 @@ main() {
             ;;
     esac
 
+    # Record/refresh the install manifest for tracked complete uninstall
+    if [[ "$DRY_RUN" != "1" ]]; then
+        manifest_init
+        manifest_cli add-path "$HOME/.local/bin/legal-workstation" || true
+    fi
+
     if [[ "$DRY_RUN" == "1" ]]; then
         log_warn "Kuru çalıştırma (LW_DRY_RUN=1): kurulum adımları atlandı."
         exit 0
     fi
 
-    # Install CLI doctor tool to ~/.local/bin and make it reachable from PATH
-    mkdir -p "$HOME/.local/bin"
+    # Install the CLI and the shared library it depends on at runtime
+    mkdir -p "$HOME/.local/bin" "$HOME/.local/lib"
+    cp -f "$DIR_ROOT/lib/common.sh" "$HOME/.local/lib/common.sh"
+    cp -f "$DIR_ROOT/lib/manifest.py" "$HOME/.local/lib/manifest.py"
     cp -f "$DIR_ROOT/bin/legal-workstation" "$HOME/.local/bin/legal-workstation"
     chmod +x "$HOME/.local/bin/legal-workstation"
     ensure_local_bin_on_path
