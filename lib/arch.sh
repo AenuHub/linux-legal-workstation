@@ -2,9 +2,9 @@
 # Arch Linux & Omarchy installation engine for Legal Workstation
 
 # Ensure common helpers are loaded
-DIR_LIB="$(cd "$(dirname "${BASHASH_SOURCE[0]:-$0}")" && pwd)"
+DIR_LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck disable=SC1091
-source "$DIR_LIB/common.sh"
+[[ -f "$DIR_LIB/common.sh" ]] && source "$DIR_LIB/common.sh"
 
 arch_install_system_packages() {
     log_step "1/5: Akıllı kart ve sistem bağımlılıkları kuruluyor..."
@@ -19,6 +19,8 @@ arch_install_system_packages() {
         libayatana-appindicator3
         curl
         tar
+        unzip
+        python3
         binutils # for 'ar' utility to unpack deb packages
     )
 
@@ -48,18 +50,30 @@ arch_install_uyap_editor() {
             log_info "AUR yardımcısı ($aur_helper) üzerinden uyap-editor kuruluyor..."
             "$aur_helper" -S --needed --noconfirm uyap-editor
         else
-            log_warn "AUR yardımcısı (yay/paru) bulunamadı. Resmi paket doğrudan indiriliyor..."
-            # Direct download fallback from official UYAP CDN if no AUR helper
+            log_warn "AUR yardımcısı (yay/paru) bulunamadı. Resmi UYAP paketi doğrudan indiriliyor..."
+            # Direct download fallback from the official Adalet Bakanlığı mirror
+            # (same source used by the Debian/Fedora engines).
             local tmp_dir
             tmp_dir=$(mktemp -d /tmp/uyap-install-XXXXXX)
-            curl -sSL "https://cdn.uyap.gov.tr/editor/uyap-editor.deb" -o "$tmp_dir/uyap.deb" 2>/dev/null || true
-            if [[ -f "$tmp_dir/uyap.deb" ]]; then
-                require_sudo
-                cd "$tmp_dir" && ar x uyap.deb && tar -xf data.tar.* -C /
-                rm -rf "$tmp_dir"
+            local zip_url="https://rayp.adalet.gov.tr/resimler/2/dosya/uyapeditor_5.4.20_amd64.zip"
+            if curl -sSL -L --connect-timeout 8 --max-time 120 "$zip_url" -o "$tmp_dir/uyap.zip" \
+                && (cd "$tmp_dir" && unzip -q uyap.zip); then
+                local deb_file
+                deb_file=$(find "$tmp_dir" -name "*uyap*.deb" | head -n 1)
+                if [[ -n "$deb_file" && -f "$deb_file" ]]; then
+                    require_sudo
+                    (cd "$tmp_dir" && ar x "$(basename "$deb_file")" \
+                        && mkdir -p extract && tar -xf data.tar.* -C extract)
+                    sudo mkdir -p /usr/share/java/uyap-editor
+                    sudo cp -r "$tmp_dir"/extract/usr/share/UYAPEditor/* /usr/share/java/uyap-editor/ 2>/dev/null || true
+                    log_success "UYAP Doküman Editörü kütüphaneleri kuruldu."
+                else
+                    log_warn "Zip arşivinde .deb paketi bulunamadı. 'yay -S uyap-editor' önerilir."
+                fi
             else
                 log_warn "Otomatik UYAP Editör paketi çekilemedi. 'yay -S uyap-editor' çalıştırmanız önerilir."
             fi
+            rm -rf "$tmp_dir"
         fi
     fi
 

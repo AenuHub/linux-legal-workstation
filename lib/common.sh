@@ -242,3 +242,30 @@ Terminal=false"
     fi
 }
 
+# Ensure ~/.local/bin (where the legal-workstation CLI is installed) is available
+# on the user's PATH for future shell sessions. Idempotent: uses a marker comment
+# so repeated installs never append duplicate entries.
+ensure_local_bin_on_path() {
+    local bin_dir="$HOME/.local/bin"
+    local marker="# Added by legal-workstation"
+    local export_line="export PATH=\"$bin_dir:\$PATH\""
+    local updated_any=false
+    local rc
+
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        [[ -f "$rc" ]] || continue
+        updated_any=true
+        if grep -qF "$marker" "$rc" 2>/dev/null; then
+            continue
+        fi
+        printf '\n%s\n%s\n' "$marker" "$export_line" >> "$rc"
+        log_info "$bin_dir kabuk PATH'ine eklendi: $rc"
+    done
+
+    # Minimal environments may have none of the standard rc files.
+    if [[ "$updated_any" != true ]]; then
+        printf '%s\n%s\n' "$marker" "$export_line" >> "$HOME/.profile"
+        log_info "$bin_dir kabuk PATH'ine eklendi: $HOME/.profile"
+    fi
+}
+

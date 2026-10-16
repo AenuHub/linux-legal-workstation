@@ -4,9 +4,30 @@
 
 set -euo pipefail
 
-DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# --- Bootstrap ---------------------------------------------------------------
+# The documented one-liner is `curl -fsSL .../install.sh | bash`. In that mode
+# there is no script file on disk and no `lib/` alongside it, so BASH_SOURCE is
+# empty. Re-fetch the repository into a temp dir and re-exec ourselves from there.
+_self="${BASH_SOURCE[0]:-}"
+if [[ -z "$_self" || ! -f "$_self" ]]; then
+    : "${LW_REPO_TARBALL:=https://github.com/AenuHub/linux-legal-workstation/archive/refs/heads/main.tar.gz}"
+    _bootstrap_dir="$(mktemp -d "${TMPDIR:-/tmp}/legal-workstation-XXXXXX")"
+    printf '[*] Kurulum deposu indiriliyor...\n'
+    if ! curl -fsSL "$LW_REPO_TARBALL" | tar -xz -C "$_bootstrap_dir" --strip-components=1; then
+        printf '[HATA] Kurulum deposu indirilemedi: %s\n' "$LW_REPO_TARBALL" >&2
+        exit 1
+    fi
+    _rc=0
+    bash "$_bootstrap_dir/install.sh" "$@" || _rc=$?
+    rm -rf "$_bootstrap_dir"
+    exit "$_rc"
+fi
+
+DIR_ROOT="$(cd "$(dirname "$_self")" && pwd)"
 # shellcheck disable=SC1091
 source "$DIR_ROOT/lib/common.sh"
+
+DRY_RUN="${LW_DRY_RUN:-0}"
 
 print_banner() {
     cat << "EOF"
@@ -36,22 +57,22 @@ main() {
         arch)
             # shellcheck disable=SC1091
             source "$DIR_ROOT/lib/arch.sh"
-            arch_install_all
+            [[ "$DRY_RUN" == "1" ]] || arch_install_all
             ;;
         debian)
             # shellcheck disable=SC1091
             source "$DIR_ROOT/lib/debian.sh"
-            debian_install_all
+            [[ "$DRY_RUN" == "1" ]] || debian_install_all
             ;;
         fedora)
             # shellcheck disable=SC1091
             source "$DIR_ROOT/lib/fedora.sh"
-            fedora_install_all
+            [[ "$DRY_RUN" == "1" ]] || fedora_install_all
             ;;
         macos)
             # shellcheck disable=SC1091
             source "$DIR_ROOT/lib/macos.sh"
-            macos_install_all
+            [[ "$DRY_RUN" == "1" ]] || macos_install_all
             ;;
         *)
             log_error "Desteklenmeyen veya tanımlanamayan işletim sistemi: $target_os"
@@ -60,10 +81,16 @@ main() {
             ;;
     esac
 
-    # Install CLI doctor tool to ~/.local/bin
+    if [[ "$DRY_RUN" == "1" ]]; then
+        log_warn "Kuru çalıştırma (LW_DRY_RUN=1): kurulum adımları atlandı."
+        exit 0
+    fi
+
+    # Install CLI doctor tool to ~/.local/bin and make it reachable from PATH
     mkdir -p "$HOME/.local/bin"
     cp -f "$DIR_ROOT/bin/legal-workstation" "$HOME/.local/bin/legal-workstation"
     chmod +x "$HOME/.local/bin/legal-workstation"
+    ensure_local_bin_on_path
 
     log_step "Kurulum Tamamlandı! Teşhis ve Doğrulama Yapılıyor..."
     "$HOME/.local/bin/legal-workstation" doctor

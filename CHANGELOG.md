@@ -2,6 +2,20 @@
 
 All notable changes to the `linux-legal-workstation` project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- **Arch/Omarchy installer was completely broken**: `lib/arch.sh` referenced the misspelled `BASHASH_SOURCE` instead of `BASH_SOURCE`, so `DIR_LIB` resolved to the wrong directory and `set -e` aborted the run the moment the Arch engine was sourced (the platform documented as "verified stable"). Corrected and guarded the `common.sh` re-source.
+- **The documented one-liner (`curl -fsSL .../install.sh | bash`) could not work**: when piped, `BASH_SOURCE[0]` is unset and `set -u` aborted on `unbound variable`. `install.sh` and `install-macos.sh` now detect this and bootstrap by fetching the repository into a temp dir before re-executing.
+- **Dead UYAP Doküman Editörü URL** in the Arch no-AUR-helper fallback (`https://cdn.uyap.gov.tr/editor/uyap-editor.deb`, HTTP 404). Replaced with the official Adalet Bakanlığı mirror used by the Debian/Fedora engines, and the extraction now stays inside a temp dir instead of writing `tar -C /` directly.
+- **`~/.local/bin` was never added to `PATH`** even though the installer tells users to run `legal-workstation`. New idempotent `ensure_local_bin_on_path` helper updates existing shell rc files.
+
+### Added
+- GitHub Actions CI (`.github/workflows/ci.yml`): bash syntax check, ShellCheck gate, bootstrap/PATH smoke tests, and a PowerShell parser job.
+- `tests/test-bootstrap-smoke.sh` — guards against the typo class, verifies every `lib/*.sh` sources independently, and runs the piped install end-to-end.
+- `tests/test-local-bin-path.sh` — verifies the PATH helper is idempotent.
+- `LW_DRY_RUN=1` dry-run mode for the Linux/macOS installers.
+
 ## [0.1.0] - 2026-09-27
 
 ### Added

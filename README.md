@@ -177,4 +177,3 @@ legal-workstation uninstall
 ## 📄 Lisans
 
 Bu proje [MIT Lisansı](LICENSE) altında sunulmaktadır.
-EOF

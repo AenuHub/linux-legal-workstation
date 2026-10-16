@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell:
+    name: Shell (lint + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      - name: Bash syntax check
+        run: |
+          for f in install.sh install-macos.sh bin/legal-workstation lib/*.sh tests/*.sh; do
+            bash -n "$f" && echo "OK  $f" || { echo "FAIL $f"; exit 1; }
+          done
+
+      - name: ShellCheck (errors are blocking)
+        run: |
+          shellcheck --severity=error \
+            install.sh install-macos.sh lib/*.sh bin/legal-workstation tests/*.sh
+
+      - name: Bootstrap smoke test (authoritative for 'curl | bash')
+        run: bash tests/test-bootstrap-smoke.sh
+
+      - name: ~/.local/bin PATH integration test
+        run: bash tests/test-local-bin-path.sh
+
+  powershell:
+    name: PowerShell (parser)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse check (install.ps1, CLI)
+        shell: pwsh
+        run: |
+          $files = @('install.ps1', 'bin/legal-workstation.ps1')
+          $failed = $false
+          foreach ($f in $files) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $f), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              Write-Host "FAIL $f"
+              $errors | ForEach-Object { Write-Host "  $($_.Message)" }
+              $failed = $true
+            } else {
+              Write-Host "OK  $f"
+            }
+          }
+          if ($failed) { exit 1 }

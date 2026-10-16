@@ -4,11 +4,31 @@
 
 set -euo pipefail
 
-DIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# --- Bootstrap ---------------------------------------------------------------
+# `curl -fsSL .../install-macos.sh | bash` leaves BASH_SOURCE empty and lib/
+# unavailable. Re-fetch the repository and re-exec from the extracted copy.
+_self="${BASH_SOURCE[0]:-}"
+if [[ -z "$_self" || ! -f "$_self" ]]; then
+    : "${LW_REPO_TARBALL:=https://github.com/AenuHub/linux-legal-workstation/archive/refs/heads/main.tar.gz}"
+    _bootstrap_dir="$(mktemp -d "${TMPDIR:-/tmp}/legal-workstation-XXXXXX")"
+    printf '[*] Kurulum deposu indiriliyor...\n'
+    if ! curl -fsSL "$LW_REPO_TARBALL" | tar -xz -C "$_bootstrap_dir" --strip-components=1; then
+        printf '[HATA] Kurulum deposu indirilemedi: %s\n' "$LW_REPO_TARBALL" >&2
+        exit 1
+    fi
+    _rc=0
+    bash "$_bootstrap_dir/install-macos.sh" "$@" || _rc=$?
+    rm -rf "$_bootstrap_dir"
+    exit "$_rc"
+fi
+
+DIR_ROOT="$(cd "$(dirname "$_self")" && pwd)"
 # shellcheck disable=SC1091
 source "$DIR_ROOT/lib/common.sh"
 # shellcheck disable=SC1091
 source "$DIR_ROOT/lib/macos.sh"
+
+DRY_RUN="${LW_DRY_RUN:-0}"
 
 print_banner() {
     cat << "EOF"
@@ -39,7 +59,12 @@ main() {
     arch=$(macos_detect_arch)
     log_info "macOS mimarisi tespit edildi: ${BOLD}${arch^^}${NC}"
 
-    macos_install_all
+    [[ "$DRY_RUN" == "1" ]] || macos_install_all
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+        log_warn "Kuru çalıştırma (LW_DRY_RUN=1): kurulum adımları atlandı."
+        exit 0
+    fi
 
     # Install legal-workstation CLI
     local target_bin="/usr/local/bin"
