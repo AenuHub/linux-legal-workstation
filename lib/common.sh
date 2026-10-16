@@ -38,6 +38,12 @@ has_cmd() {
 
 # Detect Distribution
 detect_os() {
+    # Test seam: allow overriding detection without a container.
+    if [[ -n "${LW_OS_OVERRIDE:-}" ]]; then
+        echo "$LW_OS_OVERRIDE"
+        return 0
+    fi
+
     if [[ "$(uname -s)" == "Darwin" ]]; then
         echo "macos"
         return 0
@@ -269,3 +275,63 @@ ensure_local_bin_on_path() {
     fi
 }
 
+# --- Install manifest (install-time tracking) --------------------------------
+# Records what the installer newly added so `uninstall --all` can remove exactly
+# those packages/services/paths without touching pre-existing software.
+
+LW_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+manifest_cli() {
+    if ! has_cmd python3; then
+        log_warn "python3 bulunamadi; kurulum manifestosu kullanilamaz."
+        return 1
+    fi
+    python3 "$LW_LIB_DIR/manifest.py" "$@"
+}
+
+# Create/merge the manifest. Uses the detected OS family for the schema record.
+manifest_init() {
+    LW_OS_FAMILY="$(detect_os)" manifest_cli init || true
+}
+
+# Record only packages that are not already present on the system.
+manifest_record_new_packages() {
+    local missing=() p
+    for p in "$@"; do
+        if ! pkg_present "$p"; then
+            missing+=("$p")
+        fi
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        manifest_cli add-package "${missing[@]}" || true
+    fi
+}
+
+# Record a service together with its state *before* we enable it.
+manifest_record_service_if_new() {
+    local unit="$1" was_enabled=0 was_active=0
+    if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+        was_enabled=1
+    fi
+    if systemctl is-active --quiet "$unit" 2>/dev/null; then
+        was_active=1
+    fi
+    manifest_cli add-service "$unit" "$was_enabled" "$was_active" || true
+}
+
+manifest_record_rc() {
+    if [[ -f "$1" ]]; then
+        manifest_cli add-rc "$1" || true
+    fi
+}
+
+# Is a package already installed on this system?
+pkg_present() {
+    local pkg="$1"
+    case "$(detect_os)" in
+        arch)   pacman -Qq "$pkg" >/dev/null 2>&1 ;;
+        debian) dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed" ;;
+        fedora) rpm -q "$pkg" >/dev/null 2>&1 ;;
+        *)      return 1 ;;
+    esac
+}
