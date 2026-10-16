@@ -113,6 +113,16 @@ cat > "$engine_bin/dnf" <<'PY'
 #!/usr/bin/env bash
 exit 1
 PY
+# pkg_present probes: debian -> dpkg-query, fedora -> rpm. Stub both so the
+# presence check is deterministic regardless of the host's installed packages.
+cat > "$engine_bin/dpkg-query" <<'PY'
+#!/usr/bin/env bash
+exit 1   # hicbir paket kurulu degil
+PY
+cat > "$engine_bin/rpm" <<'PY'
+#!/usr/bin/env bash
+exit 1   # hicbir paket kurulu degil
+PY
 chmod +x "$engine_bin"/*
 export PATH="$engine_bin:$PATH"
 # Fedora motoru java-11-openjdk bulamazsa Temurin indirmesin diye sahte JRE.
