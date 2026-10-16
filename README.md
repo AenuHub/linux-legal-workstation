@@ -47,6 +47,17 @@ PowerShell uygulamasını (**Yönetici olarak**) açın ve aşağıdaki komutu y
 irm https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main/install.ps1 | iex
 ```
 
+**Kaldırma (Windows):**
+
+```powershell
+legal-workstation uninstall          # Yalnızca kurulumun oluşturduğu dosyaları kaldırır
+legal-workstation uninstall --all    # Kurulumun eklediği MSI/servisleri de kaldırır (tam kaldırma)
+```
+
+Kurulumdan önce sisteminizde var olan programlara (ör. kendi kurduğunuz Adalet E-İmza) dokunulmaz:
+`uninstall --all` yalnızca kurulum sırasında manifestoya kaydedilen MSI ürün kodlarını, dosyaları ve
+servis durumunu geri alır.
+
 #### 🍎 macOS (Apple Silicon M1-M4 & Intel) — *Deneysel / Beta*:
 Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 

@@ -14,8 +14,15 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - **`uninstall` broke symlinked rc files** (dotfiles/stow/chezmoi): it replaced `~/.bashrc` etc. via `mv`, destroying the symlink and leaving the `PATH` marker in the real file. It now writes through the original path, preserving the link and permissions, and tolerates CRLF line endings.
 - **`/usr/share/applications/{akia,uets}.desktop` were removed unconditionally**, even when pre-existing. They are now recorded at install time and removed only when the manifest says the suite created them.
 - **`uninstall --all` bypassed the package-ownership guard** for recorded system paths (it could `rm -rf` package-owned files if package removal failed). Path removal now shares one ownership-checked helper.
+- **Windows `uninstall` removed pre-existing software**: it scanned the registry for any `Adalet E-İmza` display name and ran `msiexec /x`, and deleted `%ProgramFiles%\PTT\UETS` unconditionally. MSIs are now removed only when the install manifest records them as newly installed, and the UETS directory/Start Menu shortcut only when recorded as suite-created. `SCardSvr` is reverted (start type + running state) only if the installer changed it.
 
 ### Added
+- Windows `uninstall --all` (tam kaldırma): an install-time manifest at
+  `%ProgramData%\legal-workstation\manifest.json` (`lib/manifest.ps1`) records the MSI product codes
+  the installer newly added (registry before/after diff), the suite-created paths, and the
+  `SCardSvr` baseline; complete mode removes exactly those.
+- Windows CLI uninstall flags `--all` / `-y` / `--yes` (legacy `-Force`) via manual `$args` parsing,
+  for parity with the Linux CLI.
 - GitHub Actions CI (`.github/workflows/ci.yml`): bash syntax check, ShellCheck gate, bootstrap/PATH smoke tests, and a PowerShell parser job.
 - `tests/test-bootstrap-smoke.sh` — guards against the typo class, verifies every `lib/*.sh` sources independently, and runs the piped install end-to-end.
 - `tests/test-local-bin-path.sh` — verifies the PATH helper is idempotent.
