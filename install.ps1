@@ -331,7 +331,8 @@ function Install-Uets {
         Write-Info "Resmi PTT UETS sunucusundan uets-eimza.jar indiriliyor..."
         Invoke-WebRequest -Uri $uetsUrl -OutFile $uetsJar -UseBasicParsing
         if ($createdDir) {
-            try { Add-LwManifestPath -Path $uetsDir } catch { Write-Warn "UETS dizini kaydedilemedi: $_" }
+            try { Add-LwManifestCreatedPath -Path $uetsDir -Existed $false | Out-Null }
+            catch { Write-Warn "UETS dizini kaydedilemedi: $_" }
         }
 
         # Create Start Menu shortcut
@@ -348,8 +349,11 @@ function Install-Uets {
                 $shortcut.Arguments = "-jar `"$uetsJar`""
                 $shortcut.WorkingDirectory = $uetsDir
                 $shortcut.Description = "PTT Ulusal Elektronik Tebligat Sistemi E-İmza Uygulaması"
+                # Onceden VAR OLAN kisayolu sahiplenmeyiz; yalnizca biz olusturduysak kaydederiz.
+                $hadShortcut = Test-Path -LiteralPath $shortcutPath
                 $shortcut.Save()
-                try { Add-LwManifestPath -Path $shortcutPath } catch { Write-Warn "Kisayol kaydedilemedi: $_" }
+                try { Add-LwManifestCreatedPath -Path $shortcutPath -Existed $hadShortcut | Out-Null }
+                catch { Write-Warn "Kisayol kaydedilemedi: $_" }
             } catch {}
         }
 

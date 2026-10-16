@@ -26,6 +26,8 @@ docker run --rm \
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
         & /workspace/tests/windows/service-revert.tests.ps1
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        & /workspace/tests/windows/uninstall-nolib.tests.ps1
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
     '
 
 echo

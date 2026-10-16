@@ -30,12 +30,18 @@ docker run --rm \
 
         Write-Host "==> 1b. install.ps1 kayit entegrasyonu dogrulaniyor..." -ForegroundColor Cyan
         $installText = Get-Content -Raw /workspace/install.ps1
-        foreach ($needle in @("Initialize-LwManifest", "Add-LwManifestService", "Add-LwManifestPath", "Install-LwMsi", "Get-LwManifestDir")) {
+        foreach ($needle in @("Initialize-LwManifest", "Add-LwManifestService", "Add-LwManifestCreatedPath", "Install-LwMsi", "Get-LwManifestDir")) {
             if ($installText -notmatch [regex]::Escape($needle)) {
                 Write-Error "install.ps1 eksik: $needle"; exit 1
             }
         }
         Write-Host "  -> [GECTI] install.ps1 gerekli manifest cagrilarini iceriyor." -ForegroundColor Green
+
+        # Onceden var olan kisayol/dosya sahiplenilmemeli (Add-LwManifestCreatedPath).
+        if ($installText -notmatch [regex]::Escape("Add-LwManifestCreatedPath -Path `$shortcutPath -Existed `$hadShortcut")) {
+            Write-Error "install.ps1 onceden var olan UETS kisayolunu sahipleniyor olabilir"; exit 1
+        }
+        Write-Host "  -> [GECTI] install.ps1 yalnizca olusturdugu kisayolu kaydediyor." -ForegroundColor Green
 
         Write-Host "==> 1c. CLI MSI kurulum kaydi dogrulaniyor..." -ForegroundColor Cyan
         $cliText = Get-Content -Raw /workspace/bin/legal-workstation.ps1

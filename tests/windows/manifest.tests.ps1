@@ -55,6 +55,18 @@ Check "revert plan: onceden acik servise dokunma" (($null -eq $plan2.SetStartupT
 $plan3 = Get-LwServiceRevertPlan -Service ([ordered]@{ unit = 'SCardSvr'; was_enabled = $false; was_active = $false; was_start_mode = $null })
 Check "revert plan: start tipi bilinmiyorsa Manual" ($plan3.SetStartupType -eq 'Manual')
 
+# Yalnizca BIZIM olusturdugumuz yollar kaydedilmeli; onceden var olan bir yol
+# (or. kullanicinin kendi PTT UETS kisayolu) sahiplenilmemeli.
+$env:LW_MANIFEST_DIR = Join-Path $env:LW_TEST_ROOT 'lw-created'
+Initialize-LwManifest
+$preExisting = Join-Path $env:LW_MANIFEST_DIR 'Start Menu/preexisting.lnk'
+$owned       = Join-Path $env:LW_MANIFEST_DIR 'Start Menu/owned.lnk'
+$returnedPre = Add-LwManifestCreatedPath -Path $preExisting -Existed $true
+$returnedOwn = Add-LwManifestCreatedPath -Path $owned -Existed $false
+$paths = @((Read-LwManifest).paths)
+Check "onceden var olan yol KAYDEDILMEDI" (($paths -notcontains $preExisting) -and ($returnedPre -eq $false))
+Check "yalnizca bizim olusturdugumuz yol kaydedildi" (($paths -contains $owned) -and ($returnedOwn -eq $true))
+
 if ($script:failures -gt 0) { Write-Host "==> [BASARISIZ] $($script:failures) kontrol basarisiz."; exit 1 }
 Write-Host "==> [BASARILI] Windows manifest testleri gecti."
 exit 0

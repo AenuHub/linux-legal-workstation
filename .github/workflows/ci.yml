@@ -73,12 +73,13 @@ jobs:
         shell: pwsh
         run: |
           $installText = Get-Content -Raw install.ps1
-          foreach ($needle in @('Initialize-LwManifest', 'Add-LwManifestService', 'Add-LwManifestPath', 'Install-LwMsi', 'Get-LwManifestDir')) {
+          foreach ($needle in @('Initialize-LwManifest', 'Add-LwManifestService', 'Add-LwManifestCreatedPath', 'Install-LwMsi', 'Get-LwManifestDir')) {
             if ($installText -notmatch [regex]::Escape($needle)) { Write-Host "FAIL install.ps1 eksik: $needle"; exit 1 }
           }
           $cliText = Get-Content -Raw bin/legal-workstation.ps1
           if ($cliText -notmatch [regex]::Escape('Install-LwMsi')) { Write-Host 'FAIL CLI eksik: Install-LwMsi'; exit 1 }
           if ($cliText -match 'Start-Process msiexec\.exe') { Write-Host 'FAIL CLI MSI kurulumu manifest kaydi disinda'; exit 1 }
+          if ($installText -notmatch [regex]::Escape('Add-LwManifestCreatedPath')) { Write-Host 'FAIL install.ps1 sahiplenme korumasi yok'; exit 1 }
           if ((Get-Content -Raw README.md) -notmatch [regex]::Escape('manifest yoktur')) { Write-Host 'FAIL README eski kurulum notu yok'; exit 1 }
           if ((Get-Content -Raw CHANGELOG.md) -notmatch [regex]::Escape('no back-fill')) { Write-Host 'FAIL CHANGELOG eski kurulum notu yok'; exit 1 }
           Write-Host 'OK  wiring assertions'
@@ -95,7 +96,8 @@ jobs:
             'tests/windows/uninstall.tests.ps1',
             'tests/windows/install-bootstrap.tests.ps1',
             'tests/windows/install-record.tests.ps1',
-            'tests/windows/service-revert.tests.ps1'
+            'tests/windows/service-revert.tests.ps1',
+            'tests/windows/uninstall-nolib.tests.ps1'
           )
           foreach ($f in $files) {
             Write-Host "==> $f"
@@ -113,7 +115,8 @@ jobs:
             'tests/windows/cli.tests.ps1',
             'tests/windows/install-bootstrap.tests.ps1',
             'tests/windows/install-record.tests.ps1',
-            'tests/windows/service-revert.tests.ps1'
+            'tests/windows/service-revert.tests.ps1',
+            'tests/windows/uninstall-nolib.tests.ps1'
           )
           $failed = $false
           foreach ($f in $files) {

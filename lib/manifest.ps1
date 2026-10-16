@@ -89,6 +89,19 @@ function Add-LwManifestPath {
     Save-LwManifest $doc
 }
 
+# Bir yolu yalnizca BIZ olusturduysak kaydeder. Onceden var olan bir dosya/
+# dizin (or. kullanicinin kendi PTT UETS kisayolu) asla sahiplenilmez; boylece
+# 'uninstall' onu silmez. Kaydettiyse $true, atladiysa $false dondurur.
+function Add-LwManifestCreatedPath {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [bool]$Existed
+    )
+    if ($Existed) { return $false }
+    Add-LwManifestPath -Path $Path
+    return $true
+}
+
 function Remove-LwManifestFile {
     $path = Get-LwManifestPath
     if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }

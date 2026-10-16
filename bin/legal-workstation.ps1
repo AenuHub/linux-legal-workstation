@@ -25,6 +25,29 @@ $script:LwYes = ($script:LwFlags -contains '-y') -or ($script:LwFlags -contains 
 $script:LwLibFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'lib/manifest.ps1'
 if (Test-Path -LiteralPath $script:LwLibFile) { . $script:LwLibFile }
 
+# lib/manifest.ps1 yoksa (kismi/bozulmus kurulum): 'uninstall' CommandNotFoundException
+# ile olmesin, guvenli dosya temizligine dussun. Linux CLI'da ayni amacla guvenli
+# stub'lar tanimlidir.
+if (-not (Get-Command Read-LwManifest -ErrorAction SilentlyContinue)) {
+    function Get-LwManifestDir {
+        if ($env:LW_MANIFEST_DIR) { return $env:LW_MANIFEST_DIR }
+        if ($env:ProgramData)     { return (Join-Path $env:ProgramData 'legal-workstation') }
+        return (Join-Path ([System.IO.Path]::GetTempPath()) 'legal-workstation')
+    }
+    function Get-LwManifestPath { return (Join-Path (Get-LwManifestDir) 'manifest.json') }
+    function Read-LwManifest { return $null }
+    function Remove-LwManifestFile { }
+    function Get-LwServiceRevertPlan {
+        param([Parameter(Mandatory)][System.Collections.IDictionary]$Service)
+        return [ordered]@{ SetStartupType = $null; Stop = $false; Start = $false }
+    }
+    function Invoke-LwMsiUninstall { param([Parameter(Mandatory)][string]$ProductCode) return 1 }
+    function Install-LwMsi {
+        param([Parameter(Mandatory)][string]$MsiPath, [string[]]$ExtraArgs = @())
+        throw "Kurulum manifestosu kutuphanesi (lib/manifest.ps1) bulunamadi."
+    }
+}
+
 $ErrorActionPreference = 'Continue'
 
 function Write-Step {
