@@ -266,12 +266,14 @@ ensure_local_bin_on_path() {
         fi
         printf '\n%s\n%s\n' "$marker" "$export_line" >> "$rc"
         log_info "$bin_dir kabuk PATH'ine eklendi: $rc"
+        manifest_record_rc "$rc"
     done
 
     # Minimal environments may have none of the standard rc files.
     if [[ "$updated_any" != true ]]; then
         printf '%s\n%s\n' "$marker" "$export_line" >> "$HOME/.profile"
         log_info "$bin_dir kabuk PATH'ine eklendi: $HOME/.profile"
+        manifest_record_rc "$HOME/.profile"
     fi
 }
 
@@ -334,4 +336,23 @@ pkg_present() {
         fedora) rpm -q "$pkg" >/dev/null 2>&1 ;;
         *)      return 1 ;;
     esac
+}
+
+# Remove the "# Added by legal-workstation" marker and the PATH export line that
+# follows it from the user's shell rc files. Idempotent and safe on any file.
+remove_local_bin_from_path() {
+    local marker="# Added by legal-workstation"
+    local rc tmp
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        [[ -f "$rc" ]] || continue
+        if ! grep -qF "$marker" "$rc" 2>/dev/null; then
+            continue
+        fi
+        tmp="$(mktemp)"
+        awk -v m="$marker" '
+            $0 == m { skip = 1; next }
+            skip && /^export PATH=/ { skip = 0; next }
+            { skip = 0; print }
+        ' "$rc" > "$tmp" && mv "$tmp" "$rc"
+    done
 }

@@ -206,18 +206,34 @@ cmd_upgrade() {
 }
 
 cmd_uninstall() {
-    local force=false
-    if [[ "${2:-}" == "-y" || "${2:-}" == "--yes" ]]; then
-        force=true
-    fi
+    shift # drop the "uninstall"/"remove" verb
+    local force=false all=false arg
+    for arg in "$@"; do
+        case "$arg" in
+            -y|--yes) force=true ;;
+            --all) all=true ;;
+        esac
+    done
 
     if [[ "$force" != true ]]; then
-        printf "${YELLOW}${BOLD}DİKKAT:${NC} Bu işlem Legal Workstation tarafından kurulan servisleri, başlatıcıları ve dosyaları sisteminizden kaldıracaktır.\n"
-        printf "Daha önce sisteminizde manuel olarak kurulu olan genel sistem paketlerinize (kart okuyucu, sistem java vb.) dokunulmayacak şekilde temizlik yapılır.\n\n"
+        printf "${YELLOW}${BOLD}DİKKAT:${NC} Bu işlem Legal Workstation tarafından kurulan servisleri, başlatıcıları ve dosyaları kaldırır.\n"
+        if [[ "$all" == true ]]; then
+            printf "Tam kaldırma (--all): Kurulum sırasında ${BOLD}bu araç tarafından yeni eklenen${NC} sistem paketleri ve servisler de kaldırılacaktır.\n\n"
+        else
+            printf "Güvenli mod: Önceden veya manuel kurulu genel sistem paketlerinize dokunulmaz.\n"
+            printf "Kurulumda eklenen sistem paketlerini de kaldırmak için: ${CYAN}legal-workstation uninstall --all${NC}\n\n"
+        fi
         read -r -p "Kaldırma işlemine devam etmek istiyor musunuz? [e/H] " confirm
         if [[ "$confirm" != "e" && "$confirm" != "E" && "$confirm" != "y" && "$confirm" != "Y" ]]; then
             log_info "Kaldırma işlemi iptal edildi."
             exit 0
+        fi
+        if [[ "$all" == true ]]; then
+            read -r -p "Sistem paketleri de kaldırılacak. Onaylamak için 'TUMU' yazın: " confirm_all
+            if [[ "$confirm_all" != "TUMU" && "$confirm_all" != "ALL" ]]; then
+                log_info "Tam kaldırma iptal edildi."
+                exit 0
+            fi
         fi
     fi
 
@@ -236,6 +252,10 @@ cmd_uninstall() {
         log_info "3/3: legal-workstation CLI aracı kaldırılıyor..."
         sudo rm -f "/usr/local/bin/legal-workstation" "$HOME/.local/bin/legal-workstation" 2>/dev/null || true
 
+        if [[ "$all" == true ]]; then
+            log_warn "Tam kaldırma (--all) bu platformda henüz desteklenmiyor; güvenli kaldırma uygulandı."
+        fi
+
         log_success "macOS Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
         return 0
     fi
@@ -243,7 +263,7 @@ cmd_uninstall() {
     log_step "Hukuk Çalışma İstasyonu kaldırılıyor..."
 
     # 1. Stop and disable Adalet E-İmza tray service
-    log_info "1/4: Arka plan servisleri durduruluyor ve temizleniyor..."
+    log_info "1/5: Arka plan servisleri durduruluyor ve temizleniyor..."
     if has_cmd systemctl; then
         systemctl --user stop adalet-eimza-tray.service 2>/dev/null || true
         systemctl --user disable adalet-eimza-tray.service 2>/dev/null || true
@@ -254,17 +274,19 @@ cmd_uninstall() {
     fi
 
     # 2. Remove desktop entries and launchers created by suite
-    log_info "2/4: Masaüstü kısayolları ve başlatıcılar kaldırılıyor..."
+    log_info "2/5: Masaüstü kısayolları ve başlatıcılar kaldırılıyor..."
     rm -f "$HOME/.local/share/applications/tr.gov.adalet.eimza-tray.desktop"
     rm -f "$HOME/.local/share/applications/uyap-dokuman.desktop"
     rm -f "$HOME/.local/share/applications/uets.desktop"
+    rm -f "$HOME/.local/share/applications/akia.desktop"
     rm -f "$HOME/.local/share/icons/adalet-eimza-tray."* 2>/dev/null || true
     if [[ -w /usr/share/applications ]] || has_cmd sudo; then
         sudo rm -f "/usr/share/applications/uets.desktop" 2>/dev/null || true
+        sudo rm -f "/usr/share/applications/akia.desktop" 2>/dev/null || true
     fi
 
     # 3. Remove suite-specific binaries and libraries
-    log_info "3/4: Uygulama ve kütüphaneler temizleniyor..."
+    log_info "3/5: Uygulama ve kütüphaneler temizleniyor..."
     rm -f "$HOME/.local/bin/uyap-dokuman"
     rm -f "$HOME/.local/bin/adalet-eimza-tray"
     rm -f "$HOME/.local/bin/check-adalet-eimza-update"
@@ -272,6 +294,13 @@ cmd_uninstall() {
     rm -f "$HOME/.local/lib/libakisp11.so"
     rm -f "$HOME/.local/lib/libopensc-pkcs11.so"
     rm -f "$HOME/.local/lib/libappindicator3"* 2>/dev/null || true
+
+    # Clean system-level AKİA and UYAP artifacts created by the suite
+    if has_cmd sudo; then
+        sudo rm -f /usr/local/bin/akia /usr/lib/libakisp11.so 2>/dev/null || true
+        sudo rm -rf /opt/Akia 2>/dev/null || true
+        sudo rm -rf /usr/share/java/uyap-editor 2>/dev/null || true
+    fi
 
     # Clean UETS if installed by suite
     if [[ -d /opt/uets || -f /usr/local/bin/uets-eimza ]]; then
@@ -285,12 +314,19 @@ cmd_uninstall() {
         rm -rf "$HOME/.local/share/jvm/temurin-11"
     fi
 
+    # 4. Remove the ~/.local/bin PATH entry we added at install time
+    log_info "4/5: Kabuk PATH kaydı temizleniyor..."
+    remove_local_bin_from_path
 
-    # 4. Remove CLI tool itself
-    log_info "4/4: legal-workstation CLI aracı kaldırılıyor..."
+    # 5. Remove CLI tool itself
+    log_info "5/5: legal-workstation CLI aracı kaldırılıyor..."
     local self_bin="$HOME/.local/bin/legal-workstation"
     if [[ -f "$self_bin" ]]; then
         rm -f "$self_bin"
+    fi
+
+    if [[ "$all" == true ]]; then
+        uninstall_complete
     fi
 
     log_success "Hukuk Çalışma İstasyonu başarıyla kaldırıldı. Sisteminiz temizlendi."
