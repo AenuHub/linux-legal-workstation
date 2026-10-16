@@ -128,6 +128,18 @@ function Add-LwManifestService {
 }
 
 function Get-LwInstalledProductCodes {
+    # Test seam: bu ortam degiskeni ayarliysa urun kodlari kayit defteri yerine
+    # dosyadan okunur (CI'da gercek registry/msiexec olmadan kayit mantigini test
+    # etmek icin). Uretimde tanimsizdir.
+    if ($env:LW_REG_KEYS_FILE) {
+        $fromFile = @{}
+        if (Test-Path -LiteralPath $env:LW_REG_KEYS_FILE) {
+            foreach ($line in (Get-Content -LiteralPath $env:LW_REG_KEYS_FILE)) {
+                if ($line -and $line.Trim()) { $fromFile[$line.Trim()] = '' }
+            }
+        }
+        return $fromFile
+    }
     $result = @{}
     $roots  = @(
         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
@@ -198,4 +210,31 @@ function Invoke-LwMsiUninstall {
     $code = $LASTEXITCODE
     if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
     return [int]$code
+}
+
+# Bir MSI kurar ve yalnizca YENI eklenen urun kodlarini manifestoya kaydeder.
+# Kurulumdan ONCE var olan urunler (ornegin kullanicinin onceden kurdugu Adalet
+# E-Imza) hicbir zaman kaydedilmez; bu yuzden 'uninstall --all' onlara dokunmaz.
+function Install-LwMsi {
+    param(
+        [Parameter(Mandatory)][string]$MsiPath,
+        [string[]]$ExtraArgs = @()
+    )
+    $before = Get-LwInstalledProductCodes
+    $exe = if ($env:LW_MSIEXEC) { $env:LW_MSIEXEC } else { 'msiexec.exe' }
+    if ($env:LW_MSIEXEC) {
+        # Test seam: Start-Process bir .ps1 stub'ini calistiramaz.
+        $callArgs = @('/i', $MsiPath, '/qn', '/norestart') + $ExtraArgs
+        & $exe @callArgs | Out-Null
+    } else {
+        $argList = @('/i', "`"$MsiPath`"", '/qn', '/norestart') + $ExtraArgs
+        Start-Process $exe -ArgumentList $argList -Wait
+    }
+    $after = Get-LwInstalledProductCodes
+    $new = @(Get-LwNewProductCodes -Before $before -After $after)
+    if ($new.Count -gt 0) {
+        try { Add-LwManifestPackage -ProductCode $new }
+        catch { Write-Warning "MSI kaydi manifestoya yazilamadi: $_" }
+    }
+    return $new
 }

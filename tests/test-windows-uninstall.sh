@@ -22,6 +22,8 @@ docker run --rm \
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
         & /workspace/tests/windows/install-bootstrap.tests.ps1
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        & /workspace/tests/windows/install-record.tests.ps1
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
     '
 
 echo

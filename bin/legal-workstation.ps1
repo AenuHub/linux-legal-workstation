@@ -260,7 +260,7 @@ function Invoke-Upgrade {
             Write-Info "İndiriliyor..."
             Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpMsi -UseBasicParsing
             Write-Info "Kuruluyor (Sessiz)..."
-            Start-Process msiexec.exe -ArgumentList "/i `"$tmpMsi`" /qn /norestart" -Wait
+            Install-LwMsi -MsiPath $tmpMsi | Out-Null
             Remove-Item $tmpMsi -Force -ErrorAction SilentlyContinue
             Write-Success "Adalet E-İmza v$latestVer başarıyla güncellendi!"
         }

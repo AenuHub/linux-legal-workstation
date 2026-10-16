@@ -37,6 +37,16 @@ docker run --rm \
         }
         Write-Host "  -> [GECTI] install.ps1 gerekli manifest cagrilarini iceriyor." -ForegroundColor Green
 
+        Write-Host "==> 1c. CLI MSI kurulum kaydi dogrulaniyor..." -ForegroundColor Cyan
+        $cliText = Get-Content -Raw /workspace/bin/legal-workstation.ps1
+        if ($cliText -notmatch [regex]::Escape("Install-LwMsi")) {
+            Write-Error "bin/legal-workstation.ps1 eksik: Install-LwMsi"; exit 1
+        }
+        if ($cliText -match "Start-Process msiexec\.exe") {
+            Write-Error "bin/legal-workstation.ps1 dogrudan msiexec ile MSI kuruyor (manifest kaydi disinda)"; exit 1
+        }
+        Write-Host "  -> [GECTI] CLI MSI kurulumlari manifest kayit yolundan geciyor." -ForegroundColor Green
+
         Write-Host "==> 2. CLI Help Komutu Test Ediliyor..." -ForegroundColor Cyan
         & /workspace/bin/legal-workstation.ps1 help
 

@@ -113,23 +113,8 @@ function Install-SmartCardService {
     }
 }
 
-# Bir MSI'yi kurar ve yalnizca YENI eklenen urun kodlarini manifestoya kaydeder.
-function Install-LwMsi {
-    param(
-        [Parameter(Mandatory)][string]$MsiPath,
-        [string[]]$ExtraArgs = @()
-    )
-    $before = Get-LwInstalledProductCodes
-    $argList = @('/i', "`"$MsiPath`"", '/qn', '/norestart') + $ExtraArgs
-    Start-Process msiexec.exe -ArgumentList $argList -Wait
-    $after = Get-LwInstalledProductCodes
-    $new = @(Get-LwNewProductCodes -Before $before -After $after)
-    if ($new.Count -gt 0) {
-        try { Add-LwManifestPackage -ProductCode $new }
-        catch { Write-Warn "Manifestoya MSI kaydi yazilamadi: $_" }
-    }
-    return $new
-}
+# Not: Install-LwMsi artik lib/manifest.ps1 icinde tanimlidir; hem kurulum hem de
+# CLI 'upgrade' yolu ayni kayit mekanizmasini kullanir.
 
 # 2. Install Eclipse Temurin Java 11 JRE
 function Install-Java11 {
