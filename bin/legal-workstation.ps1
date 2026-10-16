@@ -277,72 +277,83 @@ function Invoke-Upgrade {
     Invoke-Doctor
 }
 
-function Invoke-Uninstall {
-    param([switch]$Complete, [switch]$AssumeYes, [switch]$ForceUninstall)
-    $ForceUninstall = $ForceUninstall -or $AssumeYes
+function Get-LwPathScope {
+    if ($env:LW_PATH_SCOPE) { return $env:LW_PATH_SCOPE }
+    return 'Machine'
+}
 
-    if (-not $ForceUninstall) {
-        Write-Host "`nDİKKAT: Bu işlem Legal Workstation tarafından kurulan Adalet E-İmza servisini, UETS dosyalarını ve CLI araçlarını kaldıracaktır." -ForegroundColor Yellow
-        Write-Host "Sisteminizde önceden kurulu olan genel programlarınıza (kart okuyucu, sistem java vb.) dokunulmayacak şekilde temizlik yapılır.`n" -ForegroundColor Gray
-        $confirm = Read-Host "Kaldırma işlemine devam etmek istiyor musunuz? [e/H]"
-        if ($confirm -notmatch '^[eEyY]$') {
-            Write-Info "Kaldırma işlemi iptal edildi."
-            return
-        }
-    }
+function Remove-LwMachinePathEntry {
+    param([Parameter(Mandatory)][string]$Dir)
+    try {
+        $scope = Get-LwPathScope
+        $path  = [Environment]::GetEnvironmentVariable('Path', $scope)
+        if ([string]::IsNullOrEmpty($path)) { return }
+        $sep    = [System.IO.Path]::PathSeparator
+        $target = $Dir.TrimEnd('\', '/')
+        $parts = $path.Split($sep) | Where-Object { $_ -and ($_.TrimEnd('\', '/') -ne $target) }
+        $new = ($parts -join $sep)
+        if ($new -ne $path) { [Environment]::SetEnvironmentVariable('Path', $new, $scope) }
+    } catch { }
+}
 
-    Write-Step "Legal Workstation (Windows) kaldırılıyor..."
+function Invoke-LwSafeUninstall {
+    $installDir = Get-LwManifestDir
+    $binDir     = Join-Path $installDir 'bin'
+    $libDir     = Join-Path $installDir 'lib'
 
-    # 1. Stop process
-    Write-Info "1/3: Çalışan süreçler sonlandırılıyor..."
+    Write-Info "Calisan surecler sonlandiriliyor..."
     Get-Process adalet-eimza-tray -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
-    # 2. Uninstall Adalet E-İmza MSI installed by suite if present
-    Write-Info "2/3: Adalet E-İmza Uygulaması kaldırılıyor..."
-    $uninstallKeys = @(
-        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
-    )
-    foreach ($k in $uninstallKeys) {
-        if (Test-Path $k) {
-            Get-ChildItem $k -ErrorAction SilentlyContinue | ForEach-Object {
-                try {
-                    $dn = (Get-ItemProperty $_.PSPath).DisplayName
-                    if ($dn -like "*Adalet E-İmza*") {
-                        $guid = $_.PSChildName
-                        Write-Info "Adalet E-İmza kaldırılıyor ($guid)..."
-                        Start-Process msiexec.exe -ArgumentList "/x $guid /qn /norestart" -Wait
-                    }
-                } catch {}
+    if (Get-Command Read-LwManifest -ErrorAction SilentlyContinue) {
+        $manifest = Read-LwManifest
+        foreach ($p in @($manifest.paths)) {
+            if ($p -and (Test-Path -LiteralPath $p)) {
+                Write-Info "Kayitli dosya kaldiriliyor: $p"
+                Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
     }
 
-    # 3. Remove UETS files and shortcuts if installed by suite
-    $uetsDir = "$env:ProgramFiles\PTT\UETS"
-    if (Test-Path $uetsDir) {
-        Write-Info "PTT UETS E-İmza istemcisi temizleniyor..."
-        Remove-Item $uetsDir -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\PTT UETS E-İmza.lnk" -Force -ErrorAction SilentlyContinue
+    Write-Info "CLI araclari ve PATH temizleniyor..."
+    Remove-LwMachinePathEntry -Dir $binDir
+    foreach ($d in @($binDir, $libDir)) {
+        if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+    # Manifest BILEREK korunur: sonraki 'uninstall --all' hala calisabilsin diye.
+}
+
+function Invoke-Uninstall {
+    param([switch]$Complete, [switch]$AssumeYes, [switch]$ForceUninstall)
+    $assumeYes = $AssumeYes -or $ForceUninstall
+
+    $hasManifest = (Get-Command Get-LwManifestPath -ErrorAction SilentlyContinue) -and
+                   (Test-Path -LiteralPath (Get-LwManifestPath))
+    if ($Complete -and -not $hasManifest) {
+        Write-Warn "Kurulum manifestosu bulunamadi; '--all' paket/servis kaldirmasi yapamaz. Yalnizca dosyalar temizlenecek."
+        $Complete = $false
     }
 
-    # 4. Remove CLI tools & PATH
-    Write-Info "3/3: CLI araçları ve ortam değişkenleri temizleniyor..."
-    $installDir = "$env:ProgramData\legal-workstation"
-    if (Test-Path $installDir) {
-        Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue
+    if (-not $assumeYes) {
+        Write-Host "`nDIKKAT: Bu islem Legal Workstation tarafindan olusturulan dosyalari kaldirir." -ForegroundColor Yellow
+        if ($Complete) {
+            Write-Host "Sistem paketleri/servisleri de kaldirilacak (--all)." -ForegroundColor Yellow
+        }
+        $confirm = Read-Host "Kaldirma islemine devam etmek istiyor musunuz? [e/H]"
+        if ($confirm -notmatch '^[eEyY]$') { Write-Info "Kaldirma islemi iptal edildi."; return }
+        if ($Complete) {
+            $token = Read-Host "Tam kaldirmayi onaylamak icin TUMU yazin"
+            if ($token -notmatch '^(TUMU|ALL)$') { Write-Info "Tam kaldirma onayi verilmedi. Iptal edildi."; return }
+        }
     }
 
+    Write-Step "Legal Workstation (Windows) kaldiriliyor..."
+    if ($Complete) { Invoke-LwCompleteUninstall } else { Invoke-LwSafeUninstall }
+    Write-Success "Legal Workstation basariyla kaldirildi."
+}
 
-    # Clean machine PATH
-    $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-    if ($machinePath -like "*$installDir\bin*") {
-        $newPath = ($machinePath.Split(';') | Where-Object { $_ -ne "$installDir\bin" -and $_ -ne "" }) -join ';'
-        [Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
-    }
-
-    Write-Success "Legal Workstation başarıyla kaldırıldı. Sisteminiz temizlendi."
+function Invoke-LwCompleteUninstall {
+    Invoke-LwSafeUninstall
+    Write-Warn "Tam kaldirma (--all) henuz uygulanmadi."
 }
 
 function Show-Help {
