@@ -41,7 +41,10 @@ cat > "$tmp_home/.local/share/legal-workstation/manifest.json" <<'JSON'
   "installed_at": "2026-10-16T00:00:00Z",
   "os_family": "arch",
   "packages_added": ["opensc", "ccid", "pcsc-tools"],
-  "services_enabled": [{"unit": "pcscd.socket", "was_enabled": false, "was_active": false}],
+  "services_enabled": [
+    {"unit": "pcscd.socket", "was_enabled": false, "was_active": false},
+    {"unit": "pcscd.service", "was_enabled": false, "was_active": false}
+  ],
   "paths": ["/opt/Akia", "/usr/share/java/uyap-editor"],
   "rc_files": []
 }
@@ -53,6 +56,8 @@ run_all "$tmp_home" "$log"
 for want in "pacman -Rs --noconfirm opensc ccid pcsc-tools" \
             "systemctl disable pcscd.socket" \
             "systemctl stop pcscd.socket" \
+            "systemctl disable pcscd.service" \
+            "systemctl stop pcscd.service" \
             "/usr/share/java/uyap-editor"; do
     if grep -q -- "$want" "$log" 2>/dev/null; then
         pass "hedeflendi: $want"
