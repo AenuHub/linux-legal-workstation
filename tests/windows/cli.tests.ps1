@@ -15,8 +15,13 @@ $probe = Join-Path $env:LW_TEST_ROOT 'cli-probe.ps1'
 Write-Output "CMD=$script:LwCommand ALL=$script:LwAll YES=$script:LwYes"
 '@ | Set-Content -LiteralPath $probe -Encoding UTF8
 
+# Probe'u calisan motorla baslat (CI 5.1 bacaginda pwsh yok; powershell.exe kullanilir).
+$engine = $null
+try { $engine = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName } catch { }
+if (-not $engine) { $engine = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell.exe' } }
+
 function Get-Parsed([string[]]$CliArgs) {
-    return (& pwsh -NoProfile -File $probe @CliArgs) -join "`n"
+    return (& $engine -NoProfile -File $probe @CliArgs) -join "`n"
 }
 
 Check "uninstall --all -> CMD/ALL" ((Get-Parsed @('uninstall', '--all')) -match 'CMD=uninstall ALL=True YES=False')

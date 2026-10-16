@@ -69,15 +69,56 @@ jobs:
           }
           if ($failed) { exit 1 }
 
-      - name: Windows uninstall behavior tests
+      - name: Wiring assertions (recording + docs)
+        shell: pwsh
+        run: |
+          $installText = Get-Content -Raw install.ps1
+          foreach ($needle in @('Initialize-LwManifest', 'Add-LwManifestService', 'Add-LwManifestPath', 'Install-LwMsi', 'Get-LwManifestDir')) {
+            if ($installText -notmatch [regex]::Escape($needle)) { Write-Host "FAIL install.ps1 eksik: $needle"; exit 1 }
+          }
+          $cliText = Get-Content -Raw bin/legal-workstation.ps1
+          if ($cliText -notmatch [regex]::Escape('Install-LwMsi')) { Write-Host 'FAIL CLI eksik: Install-LwMsi'; exit 1 }
+          if ($cliText -match 'Start-Process msiexec\.exe') { Write-Host 'FAIL CLI MSI kurulumu manifest kaydi disinda'; exit 1 }
+          if ((Get-Content -Raw README.md) -notmatch [regex]::Escape('manifest yoktur')) { Write-Host 'FAIL README eski kurulum notu yok'; exit 1 }
+          if ((Get-Content -Raw CHANGELOG.md) -notmatch [regex]::Escape('no back-fill')) { Write-Host 'FAIL CHANGELOG eski kurulum notu yok'; exit 1 }
+          Write-Host 'OK  wiring assertions'
+
+      - name: Windows uninstall behavior tests (PowerShell 7)
         shell: pwsh
         run: |
           $env:LW_REPO_ROOT = $PWD
           $env:LW_TEST_ROOT = Join-Path $env:RUNNER_TEMP 'lwtest'
           New-Item -ItemType Directory -Path $env:LW_TEST_ROOT -Force | Out-Null
-          pwsh -NoProfile -File tests/windows/manifest.tests.ps1
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          pwsh -NoProfile -File tests/windows/cli.tests.ps1
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          pwsh -NoProfile -File tests/windows/uninstall.tests.ps1
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $files = @(
+            'tests/windows/manifest.tests.ps1',
+            'tests/windows/cli.tests.ps1',
+            'tests/windows/uninstall.tests.ps1',
+            'tests/windows/install-bootstrap.tests.ps1',
+            'tests/windows/install-record.tests.ps1',
+            'tests/windows/service-revert.tests.ps1'
+          )
+          foreach ($f in $files) {
+            Write-Host "==> $f"
+            & pwsh -NoProfile -File $f
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+
+      - name: Windows PowerShell 5.1 compatibility
+        shell: powershell
+        run: |
+          $env:LW_REPO_ROOT = $PWD
+          $env:LW_TEST_ROOT = Join-Path $env:RUNNER_TEMP 'lwtest51'
+          New-Item -ItemType Directory -Path $env:LW_TEST_ROOT -Force | Out-Null
+          $files = @(
+            'tests/windows/cli.tests.ps1',
+            'tests/windows/install-bootstrap.tests.ps1',
+            'tests/windows/install-record.tests.ps1',
+            'tests/windows/service-revert.tests.ps1'
+          )
+          $failed = $false
+          foreach ($f in $files) {
+            Write-Host "==> $f (5.1)"
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $f
+            if ($LASTEXITCODE) { $failed = $true; Write-Host "FAIL $f" } else { Write-Host "OK  $f" }
+          }
+          if ($failed) { exit 1 }
