@@ -53,7 +53,24 @@ mkdir -p "$HOME/.local/share/applications" "$HOME/.local/bin" "$HOME/.local/lib"
 : > "$HOME/.local/share/applications/tr.gov.adalet.eimza-tray.desktop"
 : > "$HOME/.local/bin/legal-workstation"
 : > "$HOME/.local/bin/uyap-dokuman"
+: > "$HOME/.local/lib/common.sh"
+: > "$HOME/.local/lib/manifest.py"
 printf '\n# Added by legal-workstation\nexport PATH="%s/.local/bin:$PATH"\n' "$HOME" >> "$HOME/.bashrc"
+
+# Kurulum manifestosu: guvenli kaldirma, sistem yollarini YALNIZCA kurulumda
+# kayitliysa siler. Bu yollari burada kaydediyoruz ki olumlu kontroller gecsin.
+mkdir -p "$XDG_DATA_HOME/legal-workstation"
+cat > "$XDG_DATA_HOME/legal-workstation/manifest.json" <<'JSON'
+{
+  "manifest_version": 1,
+  "installed_at": "2026-10-16T00:00:00Z",
+  "os_family": "arch",
+  "packages_added": [],
+  "services_enabled": [],
+  "paths": ["/opt/Akia", "/usr/local/bin/akia", "/usr/lib/libakisp11.so", "/usr/share/java/uyap-editor"],
+  "rc_files": []
+}
+JSON
 
 bash "$DIR_ROOT/bin/legal-workstation" uninstall -y >/dev/null 2>&1 || true
 
@@ -75,6 +92,22 @@ for want in "/opt/Akia" "/usr/local/bin/akia" "/usr/share/java/uyap-editor" "/us
         pass "sudo temizligi planlandi: $want"
     else
         fail "sudo temizligi eksik: $want"
+    fi
+done
+
+# --- Negatif durum: manifesto yoksa onceden var olan sistem yazilimina DOKUNULMAMALI ---
+neg_home="$(mktemp -d /tmp/lw-uninstall-neg-XXXXXX)"
+trap 'rm -rf "$tmp_home" "$neg_home"' EXIT
+mkdir -p "$neg_home/.local/share/applications" "$neg_home/.local/bin" "$neg_home/.local/lib"
+neg_log="$neg_home/sudo.log"
+HOME="$neg_home" XDG_DATA_HOME="$neg_home/.local/share" SUDO_LOG="$neg_log" LW_OS_OVERRIDE=arch \
+    PATH="$fakebin:$PATH" bash "$DIR_ROOT/bin/legal-workstation" uninstall -y >/dev/null 2>&1 || true
+
+for absent in "/opt/Akia" "/usr/share/java/uyap-editor" "/usr/local/bin/akia" "/usr/lib/libakisp11.so"; do
+    if grep -qF -- "$absent" "$neg_log" 2>/dev/null; then
+        fail "manifesto yokken onceden var olan yola dokunuldu: $absent"
+    else
+        pass "manifesto yok: korundu: $absent"
     fi
 done
 

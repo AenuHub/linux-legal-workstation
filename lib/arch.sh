@@ -68,6 +68,7 @@ arch_install_uyap_editor() {
                         && mkdir -p extract && tar -xf data.tar.* -C extract)
                     sudo mkdir -p /usr/share/java/uyap-editor
                     sudo cp -r "$tmp_dir"/extract/usr/share/UYAPEditor/* /usr/share/java/uyap-editor/ 2>/dev/null || true
+                    manifest_record_path /usr/share/java/uyap-editor
                     log_success "UYAP Doküman Editörü kütüphaneleri kuruldu."
                 else
                     log_warn "Zip arşivinde .deb paketi bulunamadı. 'yay -S uyap-editor' önerilir."
@@ -288,12 +289,15 @@ arch_install_akia() {
                     tar -xf data.tar.* -C extract
                     if [[ -d extract/opt/Akia ]]; then
                         sudo cp -r extract/opt/Akia /opt/
+                        manifest_record_path /opt/Akia
                         if [[ -f extract/opt/Akia/Akia ]]; then
                             sudo ln -sf /opt/Akia/Akia /usr/local/bin/akia 2>/dev/null || true
                         else
                             sudo ln -sf /opt/Akia/akia /usr/local/bin/akia 2>/dev/null || true
                         fi
+                        manifest_record_path /usr/local/bin/akia
                         sudo ln -sf /opt/Akia/libakisp11.so /usr/lib/libakisp11.so 2>/dev/null || true
+                        manifest_record_path /usr/lib/libakisp11.so
                     fi
                 fi
                 cd "$DIR_LIB/.." && rm -rf "$tmp_dir"

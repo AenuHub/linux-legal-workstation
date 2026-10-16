@@ -126,6 +126,7 @@ fedora_install_uyap_editor() {
                 if [[ -d extract/usr/share/icons ]]; then
                     sudo cp -r extract/usr/share/icons/* /usr/share/icons/ 2>/dev/null || true
                 fi
+                manifest_record_path /usr/share/java/uyap-editor
                 log_success "UYAP Doküman Editörü başarıyla kuruldu."
             fi
         fi

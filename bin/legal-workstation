@@ -354,18 +354,29 @@ cmd_uninstall() {
     rm -f "$HOME/.local/lib/libopensc-pkcs11.so"
     rm -f "$HOME/.local/lib/libappindicator3"* 2>/dev/null || true
 
-    # Clean system-level AKİA and UYAP artifacts created by the suite
-    if has_cmd sudo; then
-        sudo rm -f /usr/local/bin/akia /usr/lib/libakisp11.so 2>/dev/null || true
-        sudo rm -rf /opt/Akia 2>/dev/null || true
-        sudo rm -rf /usr/share/java/uyap-editor 2>/dev/null || true
-    fi
-
-    # Clean UETS if installed by suite
-    if [[ -d /opt/uets || -f /usr/local/bin/uets-eimza ]]; then
-        log_info "PTT UETS E-İmza istemcisi temizleniyor..."
-        sudo rm -rf /opt/uets /usr/local/bin/uets-eimza 2>/dev/null || true
-    fi
+    # Clean system-level AKİA / UYAP / UETS artifacts — but only the ones the
+    # installer recorded in the manifest as suite-created. Pre-existing system
+    # software (including package-manager-owned files) is never removed here.
+    local recorded_paths
+    recorded_paths="$(manifest_cli list-paths 2>/dev/null || true)"
+    local sys_path owned
+    for sys_path in /usr/local/bin/akia /usr/lib/libakisp11.so /opt/Akia \
+                    /usr/share/java/uyap-editor /opt/uets /usr/local/bin/uets-eimza; do
+        if ! grep -qxF "$sys_path" <<< "$recorded_paths"; then
+            log_info "Korunuyor (kurulumda bu araç tarafından eklenmemiş): $sys_path"
+            continue
+        fi
+        owned=false
+        case "$(detect_os)" in
+            debian) if has_cmd dpkg && dpkg -S "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
+            fedora) if has_cmd rpm && rpm -qf "$sys_path" >/dev/null 2>&1; then owned=true; fi ;;
+        esac
+        if [[ "$owned" == true ]]; then
+            log_warn "Paket yöneticisine ait, atlanıyor: $sys_path (uninstall --all paketi kaldırır)."
+            continue
+        fi
+        sudo rm -rf "$sys_path" 2>/dev/null || true
+    done
 
     # Remove isolated Temurin JRE if installed exclusively by suite
     if [[ -d "$HOME/.local/share/jvm/temurin-11" ]]; then

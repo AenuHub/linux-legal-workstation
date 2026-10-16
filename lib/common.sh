@@ -174,6 +174,9 @@ exec "$JAVA_BIN" -jar "$UETS_JAR" "$@"
 EOF
         sudo chmod +x "$launcher_path"
 
+        # Track the system paths this suite created for complete removal.
+        manifest_record_path "$uets_dir" "$launcher_path"
+
         # Create desktop shortcut
         sudo tee "$desktop_path" > /dev/null << EOF
 [Desktop Entry]
@@ -218,7 +221,9 @@ common_ensure_akia_desktop() {
     # If binary found but /usr/local/bin/akia does not exist, create symlink
     if [[ -n "$akia_exec" && ! -e /usr/local/bin/akia ]]; then
         require_sudo
-        sudo ln -sf "$akia_exec" /usr/local/bin/akia 2>/dev/null || true
+        if sudo ln -sf "$akia_exec" /usr/local/bin/akia 2>/dev/null; then
+            manifest_record_path /usr/local/bin/akia
+        fi
     fi
 
     # Determine icon path
@@ -325,6 +330,12 @@ manifest_record_rc() {
     if [[ -f "$1" ]]; then
         manifest_cli add-rc "$1" || true
     fi
+}
+
+# Record system paths (outside $HOME) that the suite itself creates, so the safe
+# uninstall removes only those and never pre-existing system software.
+manifest_record_path() {
+    manifest_cli add-path "$@" || true
 }
 
 # Is a package already installed on this system?
