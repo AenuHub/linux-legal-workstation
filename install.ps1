@@ -7,6 +7,16 @@ param ()
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Kurulum manifestosu kutuphanesi (manifest.ps1) hem depodan hem 'irm | iex'
+# akisindan yuklenebilir.
+$script:LwRepoUrl = 'https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main'
+$script:LwLibPath = Join-Path $PSScriptRoot 'lib/manifest.ps1'
+if (-not (Test-Path -LiteralPath $script:LwLibPath)) {
+    $script:LwLibPath = Join-Path $env:TEMP 'lw-manifest.ps1'
+    Invoke-WebRequest -Uri "$script:LwRepoUrl/lib/manifest.ps1" -OutFile $script:LwLibPath -UseBasicParsing
+}
+. $script:LwLibPath
+
 function Write-Step {
     param([string]$Message)
     Write-Host "`n==> " -ForegroundColor Cyan -NoNewline
@@ -80,8 +90,15 @@ function Ensure-Admin {
 
 # 1. Enable & Start Smart Card Service (SCardSvr)
 function Install-SmartCardService {
-    Write-Step "1/5: Windows Akıllı Kart Servisi (SCardSvr) yapılandırılıyor..."
+    Write-Step "1/7: Windows Akıllı Kart Servisi (SCardSvr) yapılandırılıyor..."
     try {
+        # Servisin ONCEKI durumunu kaydet (geri alma icin).
+        $baseline = Get-LwServiceBaseline -Name 'SCardSvr'
+        try {
+            Add-LwManifestService -Unit 'SCardSvr' -WasEnabled $baseline.was_enabled `
+                -WasActive $baseline.was_active -WasStartMode $baseline.start_mode
+        } catch { Write-Warn "SCardSvr taban cizgisi kaydedilemedi: $_" }
+
         if (Get-Command Set-Service -ErrorAction SilentlyContinue) {
             Set-Service -Name SCardSvr -StartupType Automatic -ErrorAction SilentlyContinue
             Start-Service -Name SCardSvr -ErrorAction SilentlyContinue
@@ -92,9 +109,27 @@ function Install-SmartCardService {
     }
 }
 
+# Bir MSI'yi kurar ve yalnizca YENI eklenen urun kodlarini manifestoya kaydeder.
+function Install-LwMsi {
+    param(
+        [Parameter(Mandatory)][string]$MsiPath,
+        [string[]]$ExtraArgs = @()
+    )
+    $before = Get-LwInstalledProductCodes
+    $argList = @('/i', "`"$MsiPath`"", '/qn', '/norestart') + $ExtraArgs
+    Start-Process msiexec.exe -ArgumentList $argList -Wait
+    $after = Get-LwInstalledProductCodes
+    $new = @(Get-LwNewProductCodes -Before $before -After $after)
+    if ($new.Count -gt 0) {
+        try { Add-LwManifestPackage -ProductCode $new }
+        catch { Write-Warn "Manifestoya MSI kaydi yazilamadi: $_" }
+    }
+    return $new
+}
+
 # 2. Install Eclipse Temurin Java 11 JRE
 function Install-Java11 {
-    Write-Step "2/5: UYAP Uyumlu Java 11 JRE ortamı kontrol ediliyor..."
+    Write-Step "2/7: UYAP Uyumlu Java 11 JRE ortamı kontrol ediliyor..."
     
     $javaFound = $false
     try {
@@ -113,7 +148,7 @@ function Install-Java11 {
         try {
             Invoke-WebRequest -Uri $jreUrl -OutFile $tmpMsi -UseBasicParsing
             Write-Info "Java 11 JRE kuruluyor (Sessiz kurulum)..."
-            $p = Start-Process msiexec.exe -ArgumentList "/i `"$tmpMsi`" /qn /norestart ADDLOCAL=FeatureMain,FeatureJavaHome,FeatureJarFileRunWith" -Wait -PassThru
+            Install-LwMsi -MsiPath $tmpMsi -ExtraArgs @('ADDLOCAL=FeatureMain,FeatureJavaHome,FeatureJarFileRunWith') | Out-Null
             Remove-Item $tmpMsi -Force -ErrorAction SilentlyContinue
             
             # Refresh PATH for current session
@@ -130,7 +165,7 @@ function Install-Java11 {
 
 # 3. Install TÜBİTAK AKİS / AKİA Smart Card Driver
 function Install-AkisDriver {
-    Write-Step "3/5: TÜBİTAK AKİS / AKİA (libakisp11) akıllı kart sürücüsü kuruluyor..."
+    Write-Step "3/7: TÜBİTAK AKİS / AKİA (libakisp11) akıllı kart sürücüsü kuruluyor..."
 
     $akisInstalled = $false
     $testPaths = @(
@@ -166,7 +201,7 @@ function Install-AkisDriver {
             $msiFile = Get-ChildItem -Path $extractDir -Filter "*.msi" -Recurse | Select-Object -First 1
             if ($null -ne $msiFile) {
                 Write-Info "TÜBİTAK AKİS / AKİA kuruluyor ($($msiFile.Name))..."
-                Start-Process msiexec.exe -ArgumentList "/i `"$($msiFile.FullName)`" /qn /norestart" -Wait
+                Install-LwMsi -MsiPath $msiFile.FullName | Out-Null
                 Write-Success "TÜBİTAK AKİS sürücüsü ve AKİA başarıyla kuruldu."
             } else {
                 Write-Warn "AKİS ZIP içinde MSI paketi bulunamadı."
@@ -182,7 +217,7 @@ function Install-AkisDriver {
 
 # 4. Install UYAP Doküman Editörü
 function Install-UyapEditor {
-    Write-Step "4/5: UYAP Doküman Editörü yapılandırılıyor..."
+    Write-Step "4/7: UYAP Doküman Editörü yapılandırılıyor..."
 
     $uyapInstalled = $false
     $testPaths = @(
@@ -209,7 +244,7 @@ function Install-UyapEditor {
             Invoke-WebRequest -Uri $uyapMsiUrl -OutFile $tmpMsi -UseBasicParsing
             
             Write-Info "UYAP Doküman Editörü kuruluyor..."
-            Start-Process msiexec.exe -ArgumentList "/i `"$tmpMsi`" /qn /norestart" -Wait
+            Install-LwMsi -MsiPath $tmpMsi | Out-Null
             Remove-Item $tmpMsi -Force -ErrorAction SilentlyContinue
             Write-Success "UYAP Doküman Editörü başarıyla kuruldu."
         } catch {
@@ -220,7 +255,7 @@ function Install-UyapEditor {
 
 # 5. Install Adalet E-İmza Uygulaması (Avukat Portal Girişi)
 function Install-AdaletEimza {
-    Write-Step "5/5: Adalet E-İmza Uygulaması (Avukat Portal Girişi) kuruluyor..."
+    Write-Step "5/7: Adalet E-İmza Uygulaması (Avukat Portal Girişi) kuruluyor..."
 
     try {
         Write-Info "Resmi UYAP CDN üzerinden son Adalet E-İmza sürümü sorgulanıyor..."
@@ -234,7 +269,7 @@ function Install-AdaletEimza {
             Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpMsi -UseBasicParsing
 
             Write-Info "Adalet E-İmza kuruluyor..."
-            Start-Process msiexec.exe -ArgumentList "/i `"$tmpMsi`" /qn /norestart" -Wait
+            Install-LwMsi -MsiPath $tmpMsi | Out-Null
             Remove-Item $tmpMsi -Force -ErrorAction SilentlyContinue
             Write-Success "Adalet E-İmza Uygulaması v$latestVer kuruldu."
 
@@ -299,12 +334,16 @@ function Install-Uets {
     $uetsUrl = "https://api.etebligat.gov.tr/v1/auth/_eimza/uets-eimza.jar"
 
     try {
-        if (-not (Test-Path $uetsDir)) {
+        $createdDir = -not (Test-Path -LiteralPath $uetsDir)
+        if ($createdDir) {
             New-Item -Path $uetsDir -ItemType Directory -Force | Out-Null
         }
 
         Write-Info "Resmi PTT UETS sunucusundan uets-eimza.jar indiriliyor..."
         Invoke-WebRequest -Uri $uetsUrl -OutFile $uetsJar -UseBasicParsing
+        if ($createdDir) {
+            try { Add-LwManifestPath -Path $uetsDir } catch { Write-Warn "UETS dizini kaydedilemedi: $_" }
+        }
 
         # Create Start Menu shortcut
         if ($PSVersionTable.Platform -ne 'Unix') {
@@ -312,15 +351,16 @@ function Install-Uets {
                 $shell = New-Object -ComObject WScript.Shell
                 $shortcutPath = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\PTT UETS E-İmza.lnk"
                 $shortcut = $shell.CreateShortcut($shortcutPath)
-                
+
                 $javawCmd = Get-Command javaw.exe -ErrorAction SilentlyContinue
                 $javawPath = if ($javawCmd) { $javawCmd.Source } else { "javaw.exe" }
-                
+
                 $shortcut.TargetPath = $javawPath
                 $shortcut.Arguments = "-jar `"$uetsJar`""
                 $shortcut.WorkingDirectory = $uetsDir
                 $shortcut.Description = "PTT Ulusal Elektronik Tebligat Sistemi E-İmza Uygulaması"
                 $shortcut.Save()
+                try { Add-LwManifestPath -Path $shortcutPath } catch { Write-Warn "Kisayol kaydedilemedi: $_" }
             } catch {}
         }
 
@@ -332,12 +372,13 @@ function Install-Uets {
 
 # 8. Install CLI Tools & Add to PATH
 function Setup-CliTools {
-    $installDir = "$env:ProgramData\legal-workstation\bin"
-    if (-not (Test-Path $installDir)) {
-        New-Item -Path $installDir -ItemType Directory -Force | Out-Null
-    }
+    $rootDir    = Get-LwManifestDir
+    $installDir = Join-Path $rootDir 'bin'
+    $libDir     = Join-Path $rootDir 'lib'
+    if (-not (Test-Path $installDir)) { New-Item -Path $installDir -ItemType Directory -Force | Out-Null }
+    if (-not (Test-Path $libDir))     { New-Item -Path $libDir -ItemType Directory -Force | Out-Null }
 
-    $repoUrl = "https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main"
+    $repoUrl   = $script:LwRepoUrl
     $scriptDir = $PSScriptRoot
 
     if ($scriptDir -and (Test-Path "$scriptDir\bin\legal-workstation.ps1")) {
@@ -346,6 +387,11 @@ function Setup-CliTools {
     } else {
         Invoke-WebRequest -Uri "$repoUrl/bin/legal-workstation.ps1" -OutFile "$installDir\legal-workstation.ps1" -UseBasicParsing
         Invoke-WebRequest -Uri "$repoUrl/bin/legal-workstation.cmd" -OutFile "$installDir\legal-workstation.cmd" -UseBasicParsing
+    }
+    if ($scriptDir -and (Test-Path "$scriptDir\lib\manifest.ps1")) {
+        Copy-Item "$scriptDir\lib\manifest.ps1" -Destination "$libDir\manifest.ps1" -Force
+    } else {
+        Invoke-WebRequest -Uri "$repoUrl/lib/manifest.ps1" -OutFile "$libDir\manifest.ps1" -UseBasicParsing
     }
 
     # Add to Machine PATH if not present
@@ -360,6 +406,7 @@ function Setup-CliTools {
 function Main {
     Print-Banner
     Ensure-Admin
+    if (-not (Initialize-LwManifest)) { Write-Warn "Kurulum manifestosu olusturulamadi; 'uninstall --all' kullanilamayabilir." }
     Install-SmartCardService
     Install-Java11
     Install-AkisDriver
@@ -370,7 +417,7 @@ function Main {
     Setup-CliTools
 
     Write-Step "Kurulum Tamamlandı! Teşhis ve Doğrulama Yapılıyor..."
-    $cliScript = "$env:ProgramData\legal-workstation\bin\legal-workstation.ps1"
+    $cliScript = Join-Path (Get-LwManifestDir) 'bin/legal-workstation.ps1'
     if (Test-Path $cliScript) {
         & $cliScript doctor
     }

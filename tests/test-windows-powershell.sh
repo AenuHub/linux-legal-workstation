@@ -28,6 +28,15 @@ docker run --rm \
             Write-Host "  -> [GEÇTİ] Sözdizimi hatasız." -ForegroundColor Green
         }
 
+        Write-Host "==> 1b. install.ps1 kayit entegrasyonu dogrulaniyor..." -ForegroundColor Cyan
+        $installText = Get-Content -Raw /workspace/install.ps1
+        foreach ($needle in @("Initialize-LwManifest", "Add-LwManifestService", "Add-LwManifestPath", "Install-LwMsi", "Get-LwManifestDir")) {
+            if ($installText -notmatch [regex]::Escape($needle)) {
+                Write-Error "install.ps1 eksik: $needle"; exit 1
+            }
+        }
+        Write-Host "  -> [GECTI] install.ps1 gerekli manifest cagrilarini iceriyor." -ForegroundColor Green
+
         Write-Host "==> 2. CLI Help Komutu Test Ediliyor..." -ForegroundColor Cyan
         & /workspace/bin/legal-workstation.ps1 help
 
