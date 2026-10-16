@@ -53,7 +53,7 @@ jobs:
       - name: Parse check (install.ps1, CLI)
         shell: pwsh
         run: |
-          $files = @('install.ps1', 'bin/legal-workstation.ps1')
+          $files = @('install.ps1', 'bin/legal-workstation.ps1', 'lib/manifest.ps1')
           $failed = $false
           foreach ($f in $files) {
             $tokens = $null; $errors = $null
@@ -68,3 +68,16 @@ jobs:
             }
           }
           if ($failed) { exit 1 }
+
+      - name: Windows uninstall behavior tests
+        shell: pwsh
+        run: |
+          $env:LW_REPO_ROOT = $PWD
+          $env:LW_TEST_ROOT = Join-Path $env:RUNNER_TEMP 'lwtest'
+          New-Item -ItemType Directory -Path $env:LW_TEST_ROOT -Force | Out-Null
+          pwsh -NoProfile -File tests/windows/manifest.tests.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          pwsh -NoProfile -File tests/windows/cli.tests.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          pwsh -NoProfile -File tests/windows/uninstall.tests.ps1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
