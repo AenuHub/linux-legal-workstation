@@ -15,6 +15,15 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - `tests/test-bootstrap-smoke.sh` — guards against the typo class, verifies every `lib/*.sh` sources independently, and runs the piped install end-to-end.
 - `tests/test-local-bin-path.sh` — verifies the PATH helper is idempotent.
 - `LW_DRY_RUN=1` dry-run mode for the Linux/macOS installers.
+- **Complete uninstall (`legal-workstation uninstall --all`)**: removes exactly the system
+  packages and services the installer newly added, using an install-time manifest
+  (`~/.local/share/legal-workstation/manifest.json`). Pre-existing packages are never touched.
+- Default `uninstall` now also removes AKİA artifacts (`akia.desktop`, `/opt/Akia`,
+  `/usr/local/bin/akia`, `/usr/lib/libakisp11.so`), the UYAP editor libraries
+  (`/usr/share/java/uyap-editor`), and the `~/.local/bin` PATH entry it added.
+- `lib/manifest.py` plus `manifest_*` helpers in `lib/common.sh` for install-time tracking.
+- `tests/test-manifest.sh`, `tests/test-uninstall-safe.sh`, `tests/test-uninstall-all.sh`,
+  wired into CI.
 
 ## [0.1.0] - 2026-09-27
 

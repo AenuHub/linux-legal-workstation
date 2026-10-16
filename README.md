@@ -143,16 +143,25 @@ Bu komut sırasıyla:
 
 ## 🗑️ Güvenli ve Temiz Kaldırma (`uninstall`)
 
-Kurulum paketinin kurduğu tüm servisleri, masaüstü kısayollarını ve başlatıcıları sistemden kaldırmak istediğinizde tek bir komut çalıştırmanız yeterlidir:
+Kurulum paketinin kurduğu servisleri, masaüstü kısayollarını ve başlatıcıları kaldırmak için:
 
 ```bash
 legal-workstation uninstall
 ```
 
-*(Windows için de PowerShell veya CMD üzerinden aynı komut geçerlidir: `legal-workstation uninstall`)*
+Kurulum sırasında **bu araç tarafından yeni eklenen sistem paketlerini ve servisleri de**
+(ör. `pcscd`, kart okuyucu kütüphaneleri) kaldırmak için tam kaldırma modunu kullanın:
+
+```bash
+legal-workstation uninstall --all
+```
 
 > [!NOTE]
-> **Güvenlik ve İzolasyon İlkesi:** Bu kaldırma komutu **yalnızca** bu aracın kurduğu servisleri, başlatıcıları ve izole bileşenleri kaldırır. Bilgisayarınızda önceden veya manuel olarak kurulu olan genel sistem paketlerinize, sürücülerinize ya da kişisel dosyalarınıza dokunmayacak şekilde tasarlanmıştır.
+> **Güvenlik ve İzolasyon İlkesi:** `uninstall` yalnızca bu aracın oluşturduğu dosyaları
+> temizler; sistem paketlerinize dokunmaz. `uninstall --all` ise **yalnızca kurulum sırasında
+> araç tarafından yeni eklenmiş** paketleri kaldırır (kurulum anında kaydedilen bir manifesto
+> ile). Önceden veya manuel olarak kurduğunuz paketler, sürücüler ve kişisel dosyalarınız asla
+> kaldırılmaz. `--all` ek bir onay ister (`TUMU` yazın veya `-y` kullanın).
 
 ---
 

@@ -32,6 +32,15 @@ jobs:
       - name: ~/.local/bin PATH integration test
         run: bash tests/test-local-bin-path.sh
 
+      - name: Install manifest test
+        run: bash tests/test-manifest.sh
+
+      - name: Safe uninstall test
+        run: bash tests/test-uninstall-safe.sh
+
+      - name: Complete uninstall (--all) test
+        run: bash tests/test-uninstall-all.sh
+
   powershell:
     name: PowerShell (parser)
     runs-on: windows-latest
