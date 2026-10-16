@@ -25,9 +25,11 @@ arch_install_system_packages() {
     )
 
     log_info "Pacman paketleri kontrol ediliyor: ${pkgs[*]}"
+    manifest_record_new_packages "${pkgs[@]}"
     sudo pacman -S --needed --noconfirm "${pkgs[@]}"
 
     log_step "2/5: PC/SC Akıllı Kart servisi etkinleştiriliyor..."
+    manifest_record_service_if_new pcscd.socket
     sudo systemctl enable --now pcscd.socket pcscd.service
     log_success "PC/SC Daemon (pcscd) aktif ve çalışıyor."
 }

@@ -23,16 +23,19 @@ fedora_install_system_packages() {
     )
 
     log_info "Paketler kontrol ediliyor: ${pkgs[*]}"
+    manifest_record_new_packages "${pkgs[@]}"
     sudo dnf install -y "${pkgs[@]}"
 
     # Optional UI indicator
     if sudo dnf list libayatana-appindicator-gtk3 >/dev/null 2>&1; then
+        manifest_record_new_packages libayatana-appindicator-gtk3
         sudo dnf install -y libayatana-appindicator-gtk3 2>/dev/null || true
     fi
 
     # Java 11 check: try native dnf package or fallback to isolated Temurin 11 JRE
     if sudo dnf list java-11-openjdk >/dev/null 2>&1; then
         log_info "Fedora depolarından Java 11 OpenJDK kuruluyor..."
+        manifest_record_new_packages java-11-openjdk
         sudo dnf install -y java-11-openjdk
     else
         log_info "İzole Eclipse Temurin Java 11 JRE ortamı hazırlanıyor..."
@@ -50,6 +53,7 @@ fedora_install_system_packages() {
 
     log_step "2/5: PC/SC Akıllı Kart servisi etkinleştiriliyor..."
     if has_cmd systemctl; then
+        manifest_record_service_if_new pcscd.socket
         sudo systemctl enable --now pcscd.socket pcscd.service 2>/dev/null || true
     fi
     log_success "PC/SC Daemon (pcscd) yapılandırıldı."
