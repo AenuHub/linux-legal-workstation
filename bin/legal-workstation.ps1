@@ -351,17 +351,35 @@ function Invoke-Uninstall {
     Write-Success "Legal Workstation basariyla kaldirildi."
 }
 
+function Invoke-LwServiceAction {
+    param(
+        [Parameter(Mandatory)][string]$Action,
+        [Parameter(Mandatory)][string]$Name,
+        [string]$Value
+    )
+    # Test seam: kayit dosyasi ayarliysa gercek servis cagrisi yapilmaz, cagri
+    # (action, servis, deger) olarak kaydedilir. Uretimde tanimsizdir.
+    if ($env:LW_SERVICE_LOG) {
+        Add-Content -LiteralPath $env:LW_SERVICE_LOG -Value ("$Action $Name $Value".Trim())
+        return
+    }
+    switch ($Action) {
+        'SetStartupType' { Set-Service -Name $Name -StartupType $Value -ErrorAction SilentlyContinue }
+        'Stop'           { Stop-Service -Name $Name -Force -ErrorAction SilentlyContinue }
+        'Start'          { Start-Service -Name $Name -ErrorAction SilentlyContinue }
+    }
+}
+
 function Restore-LwService {
     param([Parameter(Mandatory)][System.Collections.IDictionary]$Service)
-    if ($PSVersionTable.Platform -eq 'Unix') { return }
+    if (($PSVersionTable.Platform -eq 'Unix') -and (-not $env:LW_SERVICE_LOG)) { return }
     $name = [string]$Service.unit
+    if (-not $name) { return }
     $plan = Get-LwServiceRevertPlan -Service $Service
     try {
-        if ($plan.SetStartupType) {
-            Set-Service -Name $name -StartupType $plan.SetStartupType -ErrorAction SilentlyContinue
-        }
-        if ($plan.Stop) { Stop-Service -Name $name -Force -ErrorAction SilentlyContinue }
-        if ($plan.Start) { Start-Service -Name $name -ErrorAction SilentlyContinue }
+        if ($plan.SetStartupType) { Invoke-LwServiceAction -Action 'SetStartupType' -Name $name -Value $plan.SetStartupType }
+        if ($plan.Stop)           { Invoke-LwServiceAction -Action 'Stop' -Name $name }
+        if ($plan.Start)          { Invoke-LwServiceAction -Action 'Start' -Name $name }
     } catch { }
 }
 
