@@ -15,6 +15,7 @@ All notable changes to the `linux-legal-workstation` project will be documented 
 - **`/usr/share/applications/{akia,uets}.desktop` were removed unconditionally**, even when pre-existing. They are now recorded at install time and removed only when the manifest says the suite created them.
 - **`uninstall --all` bypassed the package-ownership guard** for recorded system paths (it could `rm -rf` package-owned files if package removal failed). Path removal now shares one ownership-checked helper.
 - **Windows `uninstall` removed pre-existing software**: it scanned the registry for any `Adalet E-İmza` display name and ran `msiexec /x`, and deleted `%ProgramFiles%\PTT\UETS` unconditionally. MSIs are now removed only when the install manifest records them as newly installed, and the UETS directory/Start Menu shortcut only when recorded as suite-created. `SCardSvr` is reverted (start type + running state) only if the installer changed it.
+- **Windows `uninstall --all` silently did nothing on a system installed before this release**: the manifest is written at install time, so a pre-existing install has none. Complete mode now degrades safely (files-only cleanup plus an explanation) and there is **no back-fill**: such an install must be removed manually. Documented in the README.
 
 ### Added
 - Windows `uninstall --all` (tam kaldırma): an install-time manifest at

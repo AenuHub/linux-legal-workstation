@@ -58,6 +58,13 @@ Kurulumdan önce sisteminizde var olan programlara (ör. kendi kurduğunuz Adale
 `uninstall --all` yalnızca kurulum sırasında manifestoya kaydedilen MSI ürün kodlarını, dosyaları ve
 servis durumunu geri alır.
 
+> [!IMPORTANT]
+> Bu yetenek kurulum **anında** yazılan manifestoya dayanır. Bu sürümden önce kurulmuş bir sistemde
+> manifest yoktur; böyle bir sistemde `uninstall --all` MSI/servisleri kaldırmaz, yalnızca
+> dosyaları temizler ve nedenini bildirir (geriye dönük manifest oluşturulmaz). Eski bir kurulumu
+> tamamen kaldırmak için ilgili uygulamaları **Ayarlar → Uygulamalar** (Programlar ve Özellikler)
+> üzerinden elle kaldırmanız gerekir.
+
 #### 🍎 macOS (Apple Silicon M1-M4 & Intel) — *Deneysel / Beta*:
 Terminalinizi açın ve aşağıdaki komutu yapıştırıp `Enter` tuşuna basın:
 

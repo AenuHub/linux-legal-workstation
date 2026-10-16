@@ -47,6 +47,17 @@ docker run --rm \
         }
         Write-Host "  -> [GECTI] CLI MSI kurulumlari manifest kayit yolundan geciyor." -ForegroundColor Green
 
+        Write-Host "==> 1d. Eski (manifestosuz) kurulum davranisi dokumante mi..." -ForegroundColor Cyan
+        $readmeText = Get-Content -Raw /workspace/README.md
+        if ($readmeText -notmatch [regex]::Escape("manifest yoktur")) {
+            Write-Error "README.md eski (manifestosuz) kurulum notunu icermiyor"; exit 1
+        }
+        $changelogText = Get-Content -Raw /workspace/CHANGELOG.md
+        if ($changelogText -notmatch [regex]::Escape("no back-fill")) {
+            Write-Error "CHANGELOG.md eski (manifestosuz) kurulum notunu icermiyor"; exit 1
+        }
+        Write-Host "  -> [GECTI] Eski kurulum davranisi dokumante edilmis." -ForegroundColor Green
+
         Write-Host "==> 2. CLI Help Komutu Test Ediliyor..." -ForegroundColor Cyan
         & /workspace/bin/legal-workstation.ps1 help
 
