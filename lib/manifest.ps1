@@ -103,3 +103,99 @@ function Initialize-LwManifest {
     try { Save-LwManifest (Read-LwManifest); return $true }
     catch { return $false }
 }
+
+function Add-LwManifestService {
+    param(
+        [Parameter(Mandatory)][string]$Unit,
+        [bool]$WasEnabled,
+        [bool]$WasActive,
+        [string]$WasStartMode
+    )
+    $doc  = Read-LwManifest
+    $prev = $doc.services_enabled | Where-Object { $_.unit -eq $Unit } | Select-Object -First 1
+    $enabled = $WasEnabled; $active = $WasActive; $mode = $WasStartMode
+    if ($null -ne $prev) {
+        # AND-merge: ikinci kurulum servisi zaten acik gorse bile taban cizgisi korunur.
+        $enabled = ([bool]$prev.was_enabled) -and $enabled
+        $active  = ([bool]$prev.was_active)  -and $active
+        if ($prev.was_start_mode) { $mode = [string]$prev.was_start_mode }
+    }
+    $doc.services_enabled = @($doc.services_enabled | Where-Object { $_.unit -ne $Unit })
+    $doc.services_enabled += [ordered]@{
+        unit = $Unit; was_enabled = $enabled; was_active = $active; was_start_mode = $mode
+    }
+    Save-LwManifest $doc
+}
+
+function Get-LwInstalledProductCodes {
+    $result = @{}
+    $roots  = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    )
+    foreach ($root in $roots) {
+        if (-not (Test-Path $root)) { continue }
+        Get-ChildItem $root -ErrorAction SilentlyContinue | ForEach-Object {
+            $code = $_.PSChildName
+            $name = ''
+            try { $name = [string](Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DisplayName } catch { }
+            $result[$code] = $name
+        }
+    }
+    return $result
+}
+
+function Get-LwNewProductCodes {
+    param(
+        [System.Collections.IDictionary]$Before,
+        [System.Collections.IDictionary]$After
+    )
+    $new = @()
+    foreach ($code in $After.Keys) {
+        if (-not $Before.Contains($code)) { $new += $code }
+    }
+    return $new
+}
+
+function Get-LwServiceBaseline {
+    param([Parameter(Mandatory)][string]$Name)
+    $result = [ordered]@{ was_enabled = $false; was_active = $false; start_mode = $null }
+    try {
+        $svc = Get-CimInstance -ClassName Win32_Service -Filter "Name='$Name'" -ErrorAction Stop
+        if ($null -ne $svc) {
+            $mode = switch ($svc.StartMode) {
+                'Auto'     { 'Automatic' }
+                'Manual'   { 'Manual' }
+                'Disabled' { 'Disabled' }
+                default    { $null }
+            }
+            $result.start_mode  = $mode
+            $result.was_enabled = ($mode -eq 'Automatic')
+            $result.was_active  = ($svc.State -eq 'Running')
+        }
+    } catch { }
+    return $result
+}
+
+function Get-LwServiceRevertPlan {
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Service)
+    $startup = $null
+    if (-not [bool]$Service.was_enabled) {
+        $startup = if ($Service.was_start_mode) { [string]$Service.was_start_mode } else { 'Manual' }
+    }
+    return [ordered]@{
+        SetStartupType = $startup
+        Stop           = (-not [bool]$Service.was_active)
+        Start          = ([bool]$Service.was_active)
+    }
+}
+
+function Invoke-LwMsiUninstall {
+    param([Parameter(Mandatory)][string]$ProductCode)
+    $exe = if ($env:LW_MSIEXEC) { $env:LW_MSIEXEC } else { 'msiexec.exe' }
+    & $exe '/x' $ProductCode '/qn' '/norestart'
+    $code = $LASTEXITCODE
+    if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
+    return [int]$code
+}
