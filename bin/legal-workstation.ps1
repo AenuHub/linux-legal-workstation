@@ -351,9 +351,42 @@ function Invoke-Uninstall {
     Write-Success "Legal Workstation basariyla kaldirildi."
 }
 
+function Restore-LwService {
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Service)
+    if ($PSVersionTable.Platform -eq 'Unix') { return }
+    $name = [string]$Service.unit
+    $plan = Get-LwServiceRevertPlan -Service $Service
+    try {
+        if ($plan.SetStartupType) {
+            Set-Service -Name $name -StartupType $plan.SetStartupType -ErrorAction SilentlyContinue
+        }
+        if ($plan.Stop) { Stop-Service -Name $name -Force -ErrorAction SilentlyContinue }
+        if ($plan.Start) { Start-Service -Name $name -ErrorAction SilentlyContinue }
+    } catch { }
+}
+
 function Invoke-LwCompleteUninstall {
+    $manifest = $null
+    if (Get-Command Read-LwManifest -ErrorAction SilentlyContinue) { $manifest = Read-LwManifest }
+
     Invoke-LwSafeUninstall
-    Write-Warn "Tam kaldirma (--all) henuz uygulanmadi."
+
+    if ($null -ne $manifest) {
+        foreach ($code in @($manifest.packages_added)) {
+            if (-not $code) { continue }
+            Write-Info "MSI kaldiriliyor: $code"
+            try {
+                $rc = Invoke-LwMsiUninstall -ProductCode $code
+                if ($rc -ne 0) { Write-Warn "MSI kaldirma ($code) exit kodu $rc dondurdu." }
+            } catch { Write-Warn "MSI kaldirma hatasi ($code): $_" }
+        }
+        foreach ($svc in @($manifest.services_enabled)) {
+            Write-Info "Servis geri aliniyor: $($svc.unit)"
+            Restore-LwService -Service $svc
+        }
+    }
+
+    Remove-LwManifestFile
 }
 
 function Show-Help {
