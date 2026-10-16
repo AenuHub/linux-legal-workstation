@@ -8,12 +8,16 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # Kurulum manifestosu kutuphanesi (manifest.ps1) hem depodan hem 'irm | iex'
-# akisindan yuklenebilir.
+# akisindan yuklenebilir. 'irm | iex' akisinda $PSScriptRoot BOS olur; bu yuzden
+# Join-Path'ten once kontrol edilir. Gecici yol icin $env:TEMP yerine
+# GetTempPath() kullanilir (TEMP her ortamda tanimli olmayabilir).
 $script:LwRepoUrl = 'https://raw.githubusercontent.com/AenuHub/linux-legal-workstation/main'
-$script:LwLibPath = Join-Path $PSScriptRoot 'lib/manifest.ps1'
-if (-not (Test-Path -LiteralPath $script:LwLibPath)) {
-    $script:LwLibPath = Join-Path $env:TEMP 'lw-manifest.ps1'
-    Invoke-WebRequest -Uri "$script:LwRepoUrl/lib/manifest.ps1" -OutFile $script:LwLibPath -UseBasicParsing
+$script:LwLibPath = if ($PSScriptRoot) { Join-Path $PSScriptRoot 'lib/manifest.ps1' } else { $null }
+if (-not $script:LwLibPath -or -not (Test-Path -LiteralPath $script:LwLibPath)) {
+    $script:LwLibPath = Join-Path ([System.IO.Path]::GetTempPath()) 'lw-manifest.ps1'
+    if (-not (Test-Path -LiteralPath $script:LwLibPath)) {
+        Invoke-WebRequest -Uri "$script:LwRepoUrl/lib/manifest.ps1" -OutFile $script:LwLibPath -UseBasicParsing
+    }
 }
 . $script:LwLibPath
 
